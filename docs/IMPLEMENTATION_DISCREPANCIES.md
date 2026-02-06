@@ -68,6 +68,23 @@ This document tracks known mismatches between specs and the current implementati
 - `ActivitySystem` integration is TODO (minigame creation).
 - `RelationshipSystem.ObservePlayerAction` for attending events is TODO (missing ActionType in current system).
 
+**InventorySystem (`Assets/Scripts/Core/InventorySystem.cs`)**
+- Clothing equip effects are TODO only; no `ClothingSystem` integration and no `BodySystem.UpdateAppearance`.
+- Vehicle and phone equip effects are TODO only (`VehicleSystem`, `PhoneSystem` missing).
+- Item location access uses `LocationSystem.GetPlayerLocation`; no inventory/vehicle ownership checks beyond location access.
+- `ExpenseType.Personal` is not used (EconomySystem lacks it).
+- Inventory relies on `EntitySystem` ownership; internal `ownedItems` list is a cache.
+
+**ActivitySystem (`Assets/Scripts/Core/ActivitySystem.cs`)**
+- Minigame system integration is TODO (start/pause/resume/end logs only).
+- Camera mode switching is TODO (no `CameraController`).
+- Detection during work uses test flags only; no `DetectionSystem.CheckDetection` wiring.
+- Skill XP always mapped to `SkillType.Social`; mapping from `minigameId` is TODO.
+- Work earnings use a fixed hourly rate (`20f`); `JobSystem.GetCurrentJob` not implemented.
+- `RelationshipSystem.ObservePlayerAction` for attending events is TODO in `EventSystem`, not ActivitySystem.
+- Activity reminders and attention budget rely on internal `requiredAttention` heuristics; no `MinigameSystem` data.
+- Test helpers: `SetMinigamePerformanceForTesting`, `SetDetectionForTesting`, `AdvanceActivityTimeForTesting`, `SetActivityPhaseForTesting`.
+
 **Skill/Heat/Intoxication/Location Test Adjustments**
 - Added explicit test helpers for deterministic outcomes (decay loops, DUI outcomes, patrol multipliers) because Update‑driven logic and external integrations are not present.
 
