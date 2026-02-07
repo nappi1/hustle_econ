@@ -26,6 +26,7 @@ All systems and UI components listed in the implementation guide exist as script
   - `Assets/Editor/InputActionsGenerator.cs`
   - Primary asset: `Assets/Settings/Input/InputActions.inputactions`
   - Runtime `Resources.Load` copy: `Assets/Resources/InputActions.inputactions`
+- Input is now functioning in Office with the New Input System path after asset/bootstrap fixes.
 
 ### Scene/Playtest Status
 - Scene loading is functional but requires scenes to be in Build Settings.
@@ -92,7 +93,7 @@ All systems and UI components listed in the implementation guide exist as script
 ## Recommended Next Work (Pragmatic Order)
 1) Run integration scenarios from the guide against current `CoreSystems` + `Office`.
 2) Expand Save/Load with per-system data.
-3) Migrate to native Input System bindings (avoid legacy input dependency).
+3) Keep validating input in both Active Input Handling modes (`New`, `Both`) during regression passes.
 4) Resolve highest-impact runtime TODOs (EventSystem minigames, InteractionSystem job validation, Activity pay/skill mapping).
 
 ---

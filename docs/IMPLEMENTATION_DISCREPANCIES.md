@@ -33,6 +33,7 @@ This document tracks known mismatches between specs and the current implementati
 - Save/Load APIs from spec are not implemented.
 - Auto-switch for work is now driven by `ActivitySystem` (work activities trigger first-person).
 - PhoneUI integration is partially wired (phone open/close calls camera hooks).
+- Uses root-object persistence for `DontDestroyOnLoad` to avoid non-root warnings when controller is nested under player/camera hierarchy.
 
 **PhoneUI (`Assets/Scripts/UI/PhoneUI.cs`)**
 - Implemented in `UI`, but depends on `Core.InputManager`/`Core.CameraController` (namespace mismatch vs spec expectations).
@@ -166,6 +167,8 @@ This document tracks known mismatches between specs and the current implementati
   - Menu: `Tools/Input/Generate or Update InputActions`
   - Script: `Assets/Editor/InputActionsGenerator.cs`
   - Idempotently creates/updates `Player` and `UI` maps and required bindings.
+  - Writes valid `.inputactions` JSON files and imports them (instead of creating invalid ScriptableObject `.inputactions` assets via `CreateAsset`).
+  - Includes utility menu: `Tools/Input/Ensure Resources InputActions` to copy Settings asset to Resources for runtime fallback loading.
 
 If you want any of these gaps resolved, the best next step is to align systems with the new APIs/enums and complete the remaining missing systems.
 

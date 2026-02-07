@@ -33,3 +33,12 @@
   - Idempotently creates/updates `Assets/Settings/Input/InputActions.inputactions`.
   - Also creates/updates `Assets/Resources/InputActions.inputactions` for runtime `Resources.Load`.
   - Ensures required `Player` and `UI` maps/actions/bindings exist with exact expected names.
+- Updated `Assets/Editor/InputActionsGenerator.cs` after runtime/import failures:
+  - Switched `.inputactions` persistence to JSON write + `AssetDatabase.ImportAsset` (valid Input System importer path).
+  - Added strict import validation and robust fallback loading from existing JSON.
+  - Added menu item: `Tools/Input/Ensure Resources InputActions` to copy settings asset to resources on demand.
+- Updated `Assets/Scripts/Core/CameraController.cs`:
+  - Changed `DontDestroyOnLoad` target to the root GameObject to avoid non-root persistence warnings.
+  - Kept single-audio-listener enforcement on scene load.
+- Input status:
+  - Office scene input now works with New Input System backend after input action asset and bootstrap fixes.
