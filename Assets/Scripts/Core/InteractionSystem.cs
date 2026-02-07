@@ -355,7 +355,12 @@ namespace Core
                 return false;
             }
 
-            // TODO: LocationSystem.CanTravelTo not available.
+            if (!LocationSystem.Instance.CanTravelTo("player", locationId))
+            {
+                reason = "Cannot travel";
+                return false;
+            }
+
             reason = string.Empty;
             return true;
         }

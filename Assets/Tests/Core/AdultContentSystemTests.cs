@@ -190,6 +190,17 @@ namespace Tests.Core
         }
 
         [Test]
+        public void RespondToBlackmail_Pay_UsesBlackmailExpenseType()
+        {
+            EconomySystem.Instance.AddIncome("player", 1000f, EconomySystem.IncomeSource.Salary, "seed");
+            system.TriggerBlackmail("npc1", AdultContentSystem.BlackmailType.NudePhotos, 500f);
+            system.RespondToBlackmail("npc1", AdultContentSystem.BlackmailResponse.Pay);
+
+            List<EconomySystem.Transaction> history = EconomySystem.Instance.GetTransactionHistory("player", 1);
+            Assert.AreEqual(EconomySystem.ExpenseType.Blackmail, history[0].expenseType, "Expense type should be Blackmail");
+        }
+
+        [Test]
         public void RespondToBlackmail_Refuse_LeaksContent()
         {
             bool leaked = false;
@@ -248,6 +259,14 @@ namespace Tests.Core
         }
 
         [Test]
+        public void Escort_SafeClient_UsesSexWorkIncomeSource()
+        {
+            system.StartEscortAppointment(AdultContentSystem.ClientType.Safe);
+            List<EconomySystem.Transaction> history = EconomySystem.Instance.GetTransactionHistory("player", 1);
+            Assert.AreEqual(EconomySystem.IncomeSource.SexWork, history[0].source, "Escort income should use SexWork source");
+        }
+
+        [Test]
         public void Escort_DangerousClient_CanHurtPlayer()
         {
             system.SetForcedRandomForTesting(0.0f);
@@ -300,6 +319,15 @@ namespace Tests.Core
             system.TriggerSugarAllowanceForTesting("benefactor");
             float after = EconomySystem.Instance.GetBalance("player");
             Assert.AreEqual(before + 1000f, after, 0.01f, "Allowance should add income");
+        }
+
+        [Test]
+        public void SugarRelationship_Allowance_UsesSugarRelationshipIncomeSource()
+        {
+            system.StartSugarRelationship("benefactor", new AdultContentSystem.SugarTerms { monthlyAllowance = 1000f, hoursPerWeek = 4 });
+            system.TriggerSugarAllowanceForTesting("benefactor");
+            List<EconomySystem.Transaction> history = EconomySystem.Instance.GetTransactionHistory("player", 1);
+            Assert.AreEqual(EconomySystem.IncomeSource.SugarRelationship, history[0].source, "Allowance should use SugarRelationship source");
         }
 
         [Test]

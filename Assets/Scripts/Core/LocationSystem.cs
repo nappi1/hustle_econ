@@ -219,6 +219,23 @@ namespace Core
             return false;
         }
 
+        public bool CanTravelTo(string playerId, string locationId)
+        {
+            if (!CheckLocationAccess(playerId, locationId))
+            {
+                return false;
+            }
+
+            string currentLocation = GetPlayerLocation(playerId);
+            float travelCost = CalculateTravelCost(currentLocation, locationId, playerId);
+            if (travelCost <= 0f)
+            {
+                return true;
+            }
+
+            return EconomySystem.Instance.GetBalance(playerId) >= travelCost;
+        }
+
         public List<ActivityType> GetAllowedActivities(string locationId)
         {
             LocationData location = GetLocationData(locationId);

@@ -508,7 +508,12 @@ namespace UI
 
         private void RefreshContactsList()
         {
-            // TODO: RelationshipSystem.GetNPCs(playerId)
+            if (RelationshipSystem.Instance == null)
+            {
+                return;
+            }
+
+            RelationshipSystem.Instance.GetNPCs("player");
         }
 
         private void StartPhoneActivity()
@@ -518,16 +523,22 @@ namespace UI
                 return;
             }
 
-            // TODO: Phone spec expects CreateActivity(playerId, ActivityType, context).
-            // Current ActivitySystem signature: CreateActivity(ActivityType type, string minigameId, float durationHours)
-            string activityId = ActivitySystem.Instance.CreateActivity(ActivitySystem.ActivityType.Screen, "phone_drug_dealing", 1f);
+            string activityId = ActivitySystem.Instance.CreateActivity("player", ActivitySystem.ActivityType.Screen, "phone_drug_dealing");
             currentPhoneActivityId = activityId;
             state.isActivityRunning = true;
         }
 
         private string GetNPCName(string npcId)
         {
-            // TODO: RelationshipSystem.GetNPC(npcId)
+            if (RelationshipSystem.Instance != null)
+            {
+                var npc = RelationshipSystem.Instance.GetNPC(npcId);
+                if (npc != null && !string.IsNullOrEmpty(npc.name))
+                {
+                    return npc.name;
+                }
+            }
+
             if (EntitySystem.Instance != null)
             {
                 var entity = EntitySystem.Instance.GetEntity(npcId);

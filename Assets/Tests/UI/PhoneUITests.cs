@@ -16,6 +16,7 @@ namespace Tests.UI
         private GameObject activityGameObject;
         private GameObject economyGameObject;
         private GameObject timeGameObject;
+        private GameObject relationshipGameObject;
         private PhoneUI phone;
 
         [SetUp]
@@ -27,6 +28,7 @@ namespace Tests.UI
             ResetSingleton(typeof(ActivitySystem));
             ResetSingleton(typeof(EconomySystem));
             ResetSingleton(typeof(TimeEnergySystem));
+            ResetSingleton(typeof(RelationshipSystem));
 
             inputGameObject = new GameObject("InputManager");
             inputGameObject.AddComponent<InputManager>();
@@ -42,6 +44,9 @@ namespace Tests.UI
 
             timeGameObject = new GameObject("TimeEnergySystem");
             timeGameObject.AddComponent<TimeEnergySystem>();
+
+            relationshipGameObject = new GameObject("RelationshipSystem");
+            relationshipGameObject.AddComponent<RelationshipSystem>();
 
             phoneGameObject = new GameObject("PhoneUI");
             phone = phoneGameObject.AddComponent<PhoneUI>();
@@ -78,6 +83,11 @@ namespace Tests.UI
             if (timeGameObject != null)
             {
                 UnityEngine.Object.DestroyImmediate(timeGameObject);
+            }
+
+            if (relationshipGameObject != null)
+            {
+                UnityEngine.Object.DestroyImmediate(relationshipGameObject);
             }
         }
 
@@ -326,6 +336,24 @@ namespace Tests.UI
             };
             phone.AddMessageForTesting(message);
             Assert.AreEqual(1, phone.GetStateForTesting().messages.Count, "Message should be added");
+        }
+
+        [Test]
+        public void SendMessage_UsesRelationshipNpcName()
+        {
+            RelationshipSystem.NPCData data = new RelationshipSystem.NPCData
+            {
+                name = "Jamie",
+                personality = RelationshipSystem.NPCPersonality.Supportive,
+                values = new Dictionary<RelationshipSystem.NPCValue, float>(),
+                tolerances = new Dictionary<RelationshipSystem.NPCTolerance, RelationshipSystem.ToleranceLevel>(),
+                sexualBoundary = RelationshipSystem.SexualBoundaryType.Monogamous
+            };
+            RelationshipSystem.NPC npc = RelationshipSystem.Instance.CreateNPC(RelationshipSystem.NPCType.Friend, data);
+            phone.SendMessage(npc.id, "hello");
+
+            var message = phone.GetStateForTesting().messages[0];
+            Assert.AreEqual("Jamie", message.npcName, "NPC name should come from RelationshipSystem");
         }
 
         private static void ResetSingleton(Type type)

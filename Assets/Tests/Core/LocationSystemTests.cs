@@ -296,6 +296,32 @@ namespace Tests.Core
         }
 
         [Test]
+        public void CanTravelTo_FailsWhenAccessDenied()
+        {
+            bool canTravel = system.CanTravelTo("player", "apartment_player");
+            Assert.IsFalse(canTravel, "Should not travel without access");
+        }
+
+        [Test]
+        public void CanTravelTo_FailsWhenInsufficientFunds()
+        {
+            system.SetPlayerLocationForTesting("player", "street_main");
+            AllowPlayerInApartment();
+            bool canTravel = system.CanTravelTo("player", "apartment_player");
+            Assert.IsFalse(canTravel, "Should not travel without funds");
+        }
+
+        [Test]
+        public void CanTravelTo_AllowsWhenAccessAndFunds()
+        {
+            EconomySystem.Instance.AddIncome("player", 100f, EconomySystem.IncomeSource.Salary, "seed");
+            system.SetPlayerLocationForTesting("player", "street_main");
+            AllowPlayerInApartment();
+            bool canTravel = system.CanTravelTo("player", "apartment_player");
+            Assert.IsTrue(canTravel, "Should travel when access and funds are available");
+        }
+
+        [Test]
         public void GetLocationData_ReturnsDefaultWhenMissing()
         {
             LocationSystem.LocationData data = system.GetLocationData("missing");

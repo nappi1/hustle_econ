@@ -13,6 +13,9 @@ namespace Tests.Core
         private GameObject timeGameObject;
         private GameObject economyGameObject;
         private GameObject skillGameObject;
+        private GameObject jobGameObject;
+        private GameObject reputationGameObject;
+        private GameObject minigameGameObject;
         private ActivitySystem system;
 
         [SetUp]
@@ -22,6 +25,9 @@ namespace Tests.Core
             ResetSingleton(typeof(TimeEnergySystem));
             ResetSingleton(typeof(EconomySystem));
             ResetSingleton(typeof(SkillSystem));
+            ResetSingleton(typeof(JobSystem));
+            ResetSingleton(typeof(ReputationSystem));
+            ResetSingleton(typeof(MinigameSystem));
 
             timeGameObject = new GameObject("TimeEnergySystem");
             timeGameObject.AddComponent<TimeEnergySystem>();
@@ -31,6 +37,15 @@ namespace Tests.Core
 
             skillGameObject = new GameObject("SkillSystem");
             skillGameObject.AddComponent<SkillSystem>();
+
+            reputationGameObject = new GameObject("ReputationSystem");
+            reputationGameObject.AddComponent<ReputationSystem>();
+
+            jobGameObject = new GameObject("JobSystem");
+            jobGameObject.AddComponent<JobSystem>();
+
+            minigameGameObject = new GameObject("MinigameSystem");
+            minigameGameObject.AddComponent<MinigameSystem>();
 
             activityGameObject = new GameObject("ActivitySystem");
             system = activityGameObject.AddComponent<ActivitySystem>();
@@ -47,6 +62,21 @@ namespace Tests.Core
             if (skillGameObject != null)
             {
                 UnityEngine.Object.DestroyImmediate(skillGameObject);
+            }
+
+            if (jobGameObject != null)
+            {
+                UnityEngine.Object.DestroyImmediate(jobGameObject);
+            }
+
+            if (reputationGameObject != null)
+            {
+                UnityEngine.Object.DestroyImmediate(reputationGameObject);
+            }
+
+            if (minigameGameObject != null)
+            {
+                UnityEngine.Object.DestroyImmediate(minigameGameObject);
             }
 
             if (economyGameObject != null)
@@ -232,6 +262,66 @@ namespace Tests.Core
             system.EndActivity(id);
             float after = SkillSystem.Instance.GetSkillLevel("player", SkillSystem.SkillType.Social);
             Assert.GreaterOrEqual(after, before, "Skill XP should be awarded");
+        }
+
+        [Test]
+        public void SkillMapping_WorkMop_ImprovesCleaning()
+        {
+            SkillSystem.SkillType captured = SkillSystem.SkillType.Social;
+            SkillSystem.Instance.OnSkillImproved += (playerId, skill, gain) => captured = skill;
+            string id = system.CreateActivity(ActivitySystem.ActivityType.Physical, "work_mop", 1f);
+            system.EndActivity(id);
+            Assert.AreEqual(SkillSystem.SkillType.Cleaning, captured, "work_mop should map to Cleaning");
+        }
+
+        [Test]
+        public void SkillMapping_Drive_ImprovesDriving()
+        {
+            SkillSystem.SkillType captured = SkillSystem.SkillType.Social;
+            SkillSystem.Instance.OnSkillImproved += (playerId, skill, gain) => captured = skill;
+            string id = system.CreateActivity(ActivitySystem.ActivityType.Physical, "drive_delivery", 1f);
+            system.EndActivity(id);
+            Assert.AreEqual(SkillSystem.SkillType.Driving, captured, "drive minigame should map to Driving");
+        }
+
+        [Test]
+        public void WorkEarnings_UseCurrentJobHourlyWage()
+        {
+            JobSystem.Job job = new JobSystem.Job
+            {
+                id = "job_1",
+                title = "Janitor",
+                hourlyWage = 30f,
+                isActive = false,
+                promotionThreshold = 100f
+            };
+            JobSystem.Instance.CreateJob(job);
+            JobSystem.Instance.ApplyForJob("player", "job_1");
+
+            string id = system.CreateActivity(ActivitySystem.ActivityType.Physical, "work_mop", 2f);
+            system.EndActivity(id);
+
+            List<EconomySystem.Transaction> history = EconomySystem.Instance.GetTransactionHistory("player", 1);
+            Assert.AreEqual(60f, history[0].amount, 0.01f, "Earnings should use job hourly wage");
+        }
+
+        [Test]
+        public void WorkEarnings_FallbackToDefaultRate()
+        {
+            string id = system.CreateActivity(ActivitySystem.ActivityType.Physical, "work_mop", 2f);
+            system.EndActivity(id);
+
+            List<EconomySystem.Transaction> history = EconomySystem.Instance.GetTransactionHistory("player", 1);
+            Assert.AreEqual(40f, history[0].amount, 0.01f, "Fallback rate should be 20/hr");
+        }
+
+        [Test]
+        public void CreateActivity_Overload_SetsPlayerId()
+        {
+            string id = system.CreateActivity("player_two", ActivitySystem.ActivityType.Screen, "phone_drug_dealing");
+            ActivitySystem.Activity activity = system.GetActivity(id);
+            Assert.AreEqual("player_two", activity.playerId, "Overload should set player id");
+            Assert.AreEqual("phone_drug_dealing", activity.minigameId, "Context should map to minigame id");
         }
 
         [Test]

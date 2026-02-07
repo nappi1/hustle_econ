@@ -240,7 +240,7 @@ namespace Core
                     bool canAfford = EconomySystem.Instance.DeductExpense(
                         playerId,
                         blackmail.demand,
-                        EconomySystem.ExpenseType.Other,
+                        EconomySystem.ExpenseType.Blackmail,
                         $"Blackmail payment to {blackmailerId}"
                     );
 
@@ -345,7 +345,7 @@ namespace Core
                 EconomySystem.Instance.AddIncome(
                     playerId,
                     result.earnings,
-                    EconomySystem.IncomeSource.Other,
+                    EconomySystem.IncomeSource.SexWork,
                     "Escort appointment"
                 );
             }
@@ -407,7 +407,7 @@ namespace Core
             EconomySystem.Instance.AddIncome(
                 playerId,
                 terms.monthlyAllowance,
-                EconomySystem.IncomeSource.Other,
+                EconomySystem.IncomeSource.SugarRelationship,
                 $"Monthly allowance from {benefactorId}"
             );
         }

@@ -199,6 +199,15 @@ namespace Tests.Core
         }
 
         [Test]
+        public void SetGrooming_UsesPersonalExpenseType()
+        {
+            EconomySystem.Instance.AddIncome("player", 1000f, EconomySystem.IncomeSource.Salary, "seed");
+            system.SetGrooming(BodySystem.GroomingLevel.Professional);
+            var history = EconomySystem.Instance.GetTransactionHistory("player", 1);
+            Assert.AreEqual(EconomySystem.ExpenseType.Personal, history[0].expenseType, "Grooming should use Personal expense type");
+        }
+
+        [Test]
         public void Grooming_AffectsProfessionalReputation()
         {
             float before = ReputationSystem.Instance.GetReputation("player", ReputationSystem.ReputationTrack.Professional);

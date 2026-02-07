@@ -192,6 +192,22 @@ namespace Core
             return activityId;
         }
 
+        public string CreateActivity(string playerId, ActivityType type, string context)
+        {
+            string resolvedPlayerId = string.IsNullOrEmpty(playerId) ? "player" : playerId;
+            string minigameId = MapContextToMinigameId(context);
+            float durationHours = GetDefaultDurationHours(context, type);
+
+            string activityId = CreateActivity(type, minigameId, durationHours);
+            Activity activity = GetActivity(activityId);
+            if (activity != null)
+            {
+                activity.playerId = resolvedPlayerId;
+            }
+
+            return activityId;
+        }
+
         public List<Activity> GetActiveActivities(string playerId)
         {
             if (string.IsNullOrEmpty(playerId))
@@ -281,16 +297,25 @@ namespace Core
             Dictionary<string, float> rewards = new Dictionary<string, float>();
             if (!string.IsNullOrEmpty(activity.minigameId) && activity.minigameId.Contains("work"))
             {
-                float earnings = activity.durationHours * 20f;
-                rewards["money"] = earnings;
-                EconomySystem.Instance.AddIncome(activity.playerId, earnings, EconomySystem.IncomeSource.Salary, "Work activity");
-                Debug.LogWarning("TODO: JobSystem GetCurrentJob hourly wage");
+                JobSystem.Job currentJob = JobSystem.Instance.GetCurrentJob(activity.playerId);
+                if (currentJob != null)
+                {
+                    float pay = currentJob.hourlyWage * activity.durationHours;
+                    rewards["money"] = pay;
+                    EconomySystem.Instance.AddIncome(activity.playerId, pay, EconomySystem.IncomeSource.Salary, $"{currentJob.title} shift");
+                }
+                else
+                {
+                    float earnings = activity.durationHours * 20f;
+                    rewards["money"] = earnings;
+                    EconomySystem.Instance.AddIncome(activity.playerId, earnings, EconomySystem.IncomeSource.Salary, "Work activity");
+                }
             }
 
+            SkillSystem.SkillType skillType = MapMinigameToSkill(activity.minigameId);
             float skillGain = activity.performanceScore * 0.1f;
             rewards["skill_xp"] = skillGain;
-            SkillSystem.Instance.ImproveSkillFromUse(activity.playerId, SkillSystem.SkillType.Social, skillGain);
-            Debug.LogWarning("TODO: Map minigameId to skill type");
+            SkillSystem.Instance.ImproveSkillFromUse(activity.playerId, skillType, skillGain);
 
             if (!string.IsNullOrEmpty(activity.minigameId))
             {
@@ -486,6 +511,98 @@ namespace Core
             }
 
             return 0.5f;
+        }
+
+        private static SkillSystem.SkillType MapMinigameToSkill(string minigameId)
+        {
+            if (string.IsNullOrEmpty(minigameId))
+            {
+                return SkillSystem.SkillType.Social;
+            }
+
+            string id = minigameId.ToLowerInvariant();
+            if (id.Contains("work") || id.Contains("mop") || id.Contains("clean"))
+            {
+                return SkillSystem.SkillType.Cleaning;
+            }
+
+            if (id.Contains("drive"))
+            {
+                return SkillSystem.SkillType.Driving;
+            }
+
+            if (id.Contains("code") || id.Contains("program"))
+            {
+                return SkillSystem.SkillType.Programming;
+            }
+
+            if (id.Contains("trade") || id.Contains("deal"))
+            {
+                return SkillSystem.SkillType.Trading;
+            }
+
+            if (id.Contains("stream") || id.Contains("social"))
+            {
+                return SkillSystem.SkillType.Social;
+            }
+
+            return SkillSystem.SkillType.Social;
+        }
+
+        private static string MapContextToMinigameId(string context)
+        {
+            if (string.IsNullOrEmpty(context))
+            {
+                return "idle";
+            }
+
+            string ctx = context.ToLowerInvariant();
+            if (ctx.Contains("drug"))
+            {
+                return "phone_drug_dealing";
+            }
+
+            if (ctx.Contains("work"))
+            {
+                return "work_mop";
+            }
+
+            if (ctx.Contains("stream"))
+            {
+                return "stream";
+            }
+
+            return context;
+        }
+
+        private static float GetDefaultDurationHours(string context, ActivityType type)
+        {
+            if (!string.IsNullOrEmpty(context))
+            {
+                string ctx = context.ToLowerInvariant();
+                if (ctx.Contains("work"))
+                {
+                    return 8f;
+                }
+                if (ctx.Contains("stream"))
+                {
+                    return 2f;
+                }
+                if (ctx.Contains("phone"))
+                {
+                    return 1f;
+                }
+            }
+
+            switch (type)
+            {
+                case ActivityType.Screen:
+                    return 1f;
+                case ActivityType.Physical:
+                    return 2f;
+                default:
+                    return 0.5f;
+            }
         }
 
         private static bool RequiresFirstPerson(Activity activity)

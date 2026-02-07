@@ -138,7 +138,7 @@ namespace Core
             EconomySystem.Instance.DeductExpense(
                 playerId,
                 cost,
-                EconomySystem.ExpenseType.Other,
+                EconomySystem.ExpenseType.Personal,
                 $"Grooming upgrade to {level}"
             );
 
@@ -377,7 +377,7 @@ namespace Core
             EconomySystem.Instance.DeductExpense(
                 playerId,
                 bodyState.groomingCost,
-                EconomySystem.ExpenseType.Other,
+                EconomySystem.ExpenseType.Personal,
                 "Grooming maintenance"
             );
 
