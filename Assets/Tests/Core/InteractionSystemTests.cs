@@ -134,14 +134,14 @@ namespace Tests.Core
         public void Interact_Examine_ShowsNotification()
         {
             var entity = EntitySystem.Instance.CreateEntity(
-                HustleEconomy.Data.EntityType.Item,
-                new HustleEconomy.Data.EntityData
+                Data.EntityType.Item,
+                new Data.EntityData
                 {
                     owner = null,
                     value = 0f,
                     condition = 100f,
                     location = null,
-                    status = HustleEconomy.Data.EntityStatus.Active,
+                    status = Data.EntityStatus.Active,
                     customProperties = null
                 });
             var data = new InteractionSystem.InteractionData { type = InteractionSystem.InteractionType.Examine, targetId = entity.id, isAvailable = true };
@@ -192,3 +192,4 @@ namespace Tests.Core
         }
     }
 }
+

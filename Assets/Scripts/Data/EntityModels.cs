@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace HustleEconomy.Data
+namespace Data
 {
     [Serializable]
     public class Entity
@@ -48,3 +48,4 @@ namespace HustleEconomy.Data
         public Dictionary<string, object> customProperties;
     }
 }
+

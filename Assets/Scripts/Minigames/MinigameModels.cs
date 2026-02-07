@@ -1,5 +1,5 @@
 using System;
-using HustleEconomy.Minigames;
+using Minigames;
 
 namespace Minigames
 {
@@ -51,3 +51,4 @@ namespace Minigames
         public bool completedSuccessfully;
     }
 }
+

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using HustleEconomy.Data;
+using Data;
 
 namespace Core
 {
@@ -445,3 +445,4 @@ namespace Core
         }
     }
 }
+

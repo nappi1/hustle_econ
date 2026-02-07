@@ -1,6 +1,6 @@
 using Minigames;
 
-namespace HustleEconomy.Minigames
+namespace Minigames
 {
     public abstract class Minigame
     {
@@ -29,3 +29,4 @@ namespace HustleEconomy.Minigames
         }
     }
 }
+

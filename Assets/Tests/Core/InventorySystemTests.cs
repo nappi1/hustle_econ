@@ -4,7 +4,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using Core;
-using HustleEconomy.Data;
+using Data;
 
 namespace Tests.Core
 {
@@ -277,3 +277,4 @@ namespace Tests.Core
         }
     }
 }
+

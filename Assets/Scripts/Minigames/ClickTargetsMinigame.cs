@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using HustleEconomy.Minigames;
+using Minigames;
 using UnityEngine;
 
 namespace Minigames
@@ -131,3 +131,4 @@ namespace Minigames
         }
     }
 }
+
