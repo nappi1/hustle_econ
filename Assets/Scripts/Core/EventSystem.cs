@@ -176,7 +176,14 @@ namespace Core
                 Debug.LogWarning("TODO: ActivitySystem CreateActivity for event minigame");
             }
 
-            Debug.LogWarning("TODO: RelationshipSystem ObservePlayerAction (AttendedEvent)");
+            RelationshipSystem.Instance.ObservePlayerAction(new RelationshipSystem.PlayerAction
+            {
+                type = RelationshipSystem.ActionType.AttendedEvent,
+                details = evt.name,
+                timestamp = evt.scheduledTime,
+                memorability = 4,
+                isPositive = true
+            });
 
             OnEventAttended?.Invoke(eventId);
             upcomingEvents.Remove(evt);

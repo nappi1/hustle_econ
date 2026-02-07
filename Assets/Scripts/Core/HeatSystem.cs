@@ -360,11 +360,19 @@ namespace Core
         private void IncreasePatrolFrequency(float multiplier)
         {
             patrolFrequencyMultiplier *= multiplier;
+            if (DetectionSystem.Instance != null)
+            {
+                DetectionSystem.Instance.SetPatrolFrequency(patrolFrequencyMultiplier);
+            }
         }
 
         private void IncreaseDetectionSensitivity(float multiplier)
         {
             detectionSensitivityMultiplier *= multiplier;
+            if (DetectionSystem.Instance != null)
+            {
+                DetectionSystem.Instance.SetDetectionSensitivity(detectionSensitivityMultiplier);
+            }
         }
 
         private void ApplyHeatSourceReduction(float amount, string reason)

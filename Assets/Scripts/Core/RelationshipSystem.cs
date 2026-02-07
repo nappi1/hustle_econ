@@ -86,6 +86,7 @@ namespace Core
         public enum ActionType
         {
             MissedEvent,
+            AttendedEvent,
             WorkedOvertime,
             LiedAboutLocation,
             Cheated,
@@ -422,6 +423,9 @@ namespace Core
                 case ActionType.Arrested:
                     impact -= GetValue(npc, NPCValue.Morality) * 20f;
                     impact -= GetValue(npc, NPCValue.Stability) * 15f;
+                    break;
+                case ActionType.AttendedEvent:
+                    impact += 0f;
                     break;
                 case ActionType.GotPromoted:
                     impact += GetValue(npc, NPCValue.Ambition) * 10f;

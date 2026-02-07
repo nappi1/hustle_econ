@@ -468,6 +468,21 @@ namespace Core
             return GetJob(jobId);
         }
 
+        public bool HasJob(string playerId, string jobId)
+        {
+            if (string.IsNullOrEmpty(playerId) || string.IsNullOrEmpty(jobId))
+            {
+                return false;
+            }
+
+            if (!playerJobs.TryGetValue(playerId, out List<string> jobsForPlayer) || jobsForPlayer == null)
+            {
+                return false;
+            }
+
+            return jobsForPlayer.Contains(jobId);
+        }
+
         public void SetShiftPerformanceForTesting(string playerId, string jobId, float performance)
         {
             testShiftPerformance[$"{playerId}_{jobId}"] = performance;

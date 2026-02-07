@@ -355,6 +355,12 @@ namespace Core
                 return false;
             }
 
+            if (!JobSystem.Instance.HasJob("player", jobId))
+            {
+                reason = "Not employed";
+                return false;
+            }
+
             if (!job.isActive)
             {
                 reason = "Job not active";
