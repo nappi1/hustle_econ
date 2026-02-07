@@ -463,6 +463,11 @@ namespace Core
             jobs[job.id] = job;
         }
 
+        public Job GetJobById(string jobId)
+        {
+            return GetJob(jobId);
+        }
+
         public void SetShiftPerformanceForTesting(string playerId, string jobId, float performance)
         {
             testShiftPerformance[$"{playerId}_{jobId}"] = performance;

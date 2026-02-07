@@ -558,8 +558,7 @@ namespace UI
                 return 0f;
             }
 
-            DateTime now = TimeEnergySystem.Instance.GetCurrentTime();
-            return (float)now.TimeOfDay.TotalHours;
+            return TimeEnergySystem.Instance.GetCurrentGameTime();
         }
 
         private string GetCurrentContactId()

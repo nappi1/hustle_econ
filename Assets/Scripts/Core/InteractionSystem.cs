@@ -336,10 +336,28 @@ namespace Core
 
         private bool ValidateStartJob(string jobId, out string reason)
         {
-            // TODO: JobSystem.GetJob/GetCurrentJob and location checks are not available.
             if (JobSystem.Instance == null)
             {
                 reason = "Job system unavailable";
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(jobId))
+            {
+                reason = "Job not found";
+                return false;
+            }
+
+            JobSystem.Job job = JobSystem.Instance.GetJobById(jobId);
+            if (job == null)
+            {
+                reason = "Job not found";
+                return false;
+            }
+
+            if (!job.isActive)
+            {
+                reason = "Job not active";
                 return false;
             }
 

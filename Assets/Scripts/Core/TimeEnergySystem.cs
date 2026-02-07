@@ -114,6 +114,16 @@ namespace Core
             return currentTime;
         }
 
+        public float GetCurrentGameTime()
+        {
+            return (float)currentTime.TimeOfDay.TotalHours;
+        }
+
+        public string GetGameDate()
+        {
+            return currentTime.ToString("yyyy-MM-dd");
+        }
+
         public float GetDeltaGameHours(float timestamp)
         {
             float currentHours = (float)(currentTime - initialTime).TotalHours;

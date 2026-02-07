@@ -1,5 +1,3 @@
-using Minigames;
-
 namespace Minigames
 {
     public abstract class Minigame

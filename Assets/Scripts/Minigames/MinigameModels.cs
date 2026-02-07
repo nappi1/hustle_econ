@@ -1,5 +1,4 @@
 using System;
-using Minigames;
 
 namespace Minigames
 {

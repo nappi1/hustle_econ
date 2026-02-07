@@ -254,9 +254,11 @@ namespace UI
                 return;
             }
 
-            DateTime now = TimeEnergySystem.Instance.GetCurrentTime();
-            state.currentTime = $"{now.Hour:D2}:{now.Minute:D2}";
-            state.currentDate = now.ToString("yyyy-MM-dd");
+            float currentHours = TimeEnergySystem.Instance.GetCurrentGameTime();
+            int hours = Mathf.FloorToInt(currentHours);
+            int minutes = Mathf.FloorToInt((currentHours - hours) * 60f);
+            state.currentTime = $"{hours:D2}:{minutes:D2}";
+            state.currentDate = TimeEnergySystem.Instance.GetGameDate();
 
             if (timeText != null)
             {

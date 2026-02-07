@@ -251,20 +251,8 @@ namespace Core
 
         public void GenerateRelationshipEvents(string npcId, RelationshipSystem.NPCType type)
         {
-            RelationshipSystem.NPC npc = RelationshipSystem.Instance.CreateNPC(type, new RelationshipSystem.NPCData
-            {
-                name = npcId,
-                personality = RelationshipSystem.NPCPersonality.Supportive,
-                values = new Dictionary<RelationshipSystem.NPCValue, float>(),
-                tolerances = new Dictionary<RelationshipSystem.NPCTolerance, RelationshipSystem.ToleranceLevel>(),
-                sexualBoundary = RelationshipSystem.SexualBoundaryType.Monogamous
-            });
-
-            string npcName = npc != null ? npc.name : npcId;
-            if (npc == null)
-            {
-                Debug.LogWarning("TODO: RelationshipSystem GetNPC for name");
-            }
+            RelationshipSystem.NPC npc = RelationshipSystem.Instance.GetNPC(npcId);
+            string npcName = npc != null && !string.IsNullOrEmpty(npc.name) ? npc.name : npcId;
 
             DateTime now = TimeEnergySystem.Instance.GetCurrentTime();
 

@@ -1,4 +1,3 @@
-using Minigames;
 using UnityEngine;
 
 namespace Minigames

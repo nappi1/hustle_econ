@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Minigames;
-using Minigames;
 
 namespace Core
 {
@@ -101,7 +100,9 @@ namespace Core
                 state = MinigameState.Running,
                 currentPerformance = 50f,
                 difficulty = 1.0f,
-                startTime = DateTime.UtcNow,
+                startTime = TimeEnergySystem.Instance != null
+                    ? TimeEnergySystem.Instance.GetCurrentTime()
+                    : DateTime.UtcNow,
                 elapsedTime = 0f,
                 successfulActions = 0,
                 failedActions = 0,
