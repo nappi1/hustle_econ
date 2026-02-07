@@ -1,0 +1,7 @@
+# Changelog
+
+## 2026-02-07
+
+- Updated `docs/systems_completed_next_steps.md` to reflect current scene/build status (`CoreSystems`, `Office`, `SampleScene`) and revised next-step priorities (integration scenarios, save/load expansion, native Input System migration, spec-gap hardening).
+- Updated `docs/COMPLETE_IMPLEMENTATION_GUIDE.md` to mark the 8 new components as implemented, adjust "You are here" to current project state, and replace Option A with runtime hardening/validation steps.
+- Updated `docs/IMPLEMENTATION_DISCREPANCIES.md` to reflect current Build Settings scene status and to shift UI/scene tasks from creation to verification/polish of existing scenes.
