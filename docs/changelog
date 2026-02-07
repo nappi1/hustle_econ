@@ -2,6 +2,34 @@
 
 ## 2026-02-07
 
+### Documentation Updates
+
 - Updated `docs/systems_completed_next_steps.md` to reflect current scene/build status (`CoreSystems`, `Office`, `SampleScene`) and revised next-step priorities (integration scenarios, save/load expansion, native Input System migration, spec-gap hardening).
 - Updated `docs/COMPLETE_IMPLEMENTATION_GUIDE.md` to mark the 8 new components as implemented, adjust "You are here" to current project state, and replace Option A with runtime hardening/validation steps.
 - Updated `docs/IMPLEMENTATION_DISCREPANCIES.md` to reflect current Build Settings scene status and to shift UI/scene tasks from creation to verification/polish of existing scenes.
+- Updated input documentation after implementation changes:
+  - Documented dual-backend `InputManager` (New Input System + legacy fallback) and debug-path logging.
+  - Documented `CoreSceneBuilder` EventSystem module behavior for new vs legacy input modules.
+  - Added standardized Input Actions generator + asset locations:
+    - `Assets/Editor/InputActionsGenerator.cs`
+    - `Assets/Settings/Input/InputActions.inputactions`
+    - `Assets/Resources/InputActions.inputactions`
+
+### Code Updates
+
+- Updated `Assets/Scripts/Core/InputManager.cs`:
+  - Added dual-backend input handling (New Input System preferred, legacy fallback).
+  - Added optional serialized config for action asset/map/action names and debug logging.
+  - Added runtime backend selection and introspection (`IsUsingNewInputSystem`, `IsUsingLegacyInput`).
+  - Added New Input System action-map/action discovery with fallback names (for `Move`, `Look`, `Run`, `Interact`, etc.).
+  - Kept legacy key path behind compile guards and removed hard dependency on legacy-only runtime.
+  - Restored simulation semantics used by tests (`SimulateInput` immediate held/down/up + events).
+- Updated `Assets/Editor/CoreSceneBuilder.cs`:
+  - EventSystem creation now uses `InputSystemUIInputModule` when `ENABLE_INPUT_SYSTEM` is present.
+  - Falls back to `StandaloneInputModule` when new input system is unavailable.
+  - Avoids duplicate EventSystem creation and removes legacy module when new module is used.
+- Added `Assets/Editor/InputActionsGenerator.cs`:
+  - Menu item: `Tools/Input/Generate or Update InputActions`.
+  - Idempotently creates/updates `Assets/Settings/Input/InputActions.inputactions`.
+  - Also creates/updates `Assets/Resources/InputActions.inputactions` for runtime `Resources.Load`.
+  - Ensures required `Player` and `UI` maps/actions/bindings exist with exact expected names.

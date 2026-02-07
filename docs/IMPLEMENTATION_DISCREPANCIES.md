@@ -8,13 +8,20 @@ This document tracks known mismatches between specs and the current implementati
 - `EconomySystem` enums now include `IncomeSource.SexWork`, `IncomeSource.SugarRelationship`, `ExpenseType.Blackmail`, `ExpenseType.Personal`; key usages have been updated, but some subsystems still use `Other` by default.
 - `JobSystem` now includes `FireAllJobs`, `TriggerWarning(playerId, ...)`, `CheckTerminationForSexWork`, and `GetCurrentJob`.
 - `RelationshipSystem` now includes `GetNPCs`, `GetNPC`, NPC `bodyPreferences`, and `PlayerAction.isPositive`.
-- Input handling: project uses the new Input System. `InputManager` and `ClickTargetsMinigame` now gate legacy input access behind `ENABLE_LEGACY_INPUT_MANAGER`, but no native Input System bindings exist yet.
+- Input handling: `InputManager` now supports dual backend selection (New Input System + legacy fallback) and runtime path selection via compile guards.
+- Standardized Input Actions assets are now generated/maintained at:
+  - `Assets/Settings/Input/InputActions.inputactions`
+  - `Assets/Resources/InputActions.inputactions`
 - Scene loading: `LocationSystem` now calls `GameManager.LoadScene`; Build Settings currently include `CoreSystems`, `SampleScene`, and `Office`.
 
 **InputManager (`Assets/Scripts/Core/InputManager.cs`)**
 - Uses `Core` namespace; spec expects `HustleEconomy.Core`.
 - Save/Load APIs from spec are not implemented.
-- Legacy `UnityEngine.Input` is used for non-simulated input and is gated by `ENABLE_LEGACY_INPUT_MANAGER`.
+- Supports New Input System action-map binding (`Player`/`UI`) with legacy fallback.
+- Runtime selection:
+  - Prefer New Input System when `ENABLE_INPUT_SYSTEM` and valid action map are available.
+  - Fallback to legacy when `ENABLE_LEGACY_INPUT_MANAGER` is available.
+- Includes debug path/movement logs behind `enableDebug`.
 
 **PlayerController (`Assets/Scripts/Core/PlayerController.cs`)**
 - Uses `Core` namespace; spec expects `HustleEconomy.Core`.
@@ -155,6 +162,10 @@ This document tracks known mismatches between specs and the current implementati
 - Core scene and office scene builders exist and align with current runtime APIs.
 - DebugHelpers/TestDataSetup now use runtime APIs instead of removed helpers (SetBalance/SetGameTimeForTesting, etc.).
 - Editor tools rely on scenes being present in Build Settings and consistent IDs (`office_main`, `apartment_player`, `job1`).
+- Input actions generator exists:
+  - Menu: `Tools/Input/Generate or Update InputActions`
+  - Script: `Assets/Editor/InputActionsGenerator.cs`
+  - Idempotently creates/updates `Player` and `UI` maps and required bindings.
 
 If you want any of these gaps resolved, the best next step is to align systems with the new APIs/enums and complete the remaining missing systems.
 

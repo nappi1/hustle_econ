@@ -5,6 +5,9 @@ using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using Core;
 using UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem.UI;
+#endif
 
 namespace HustleEconomy.Editor {
     /// <summary>
@@ -123,11 +126,34 @@ namespace HustleEconomy.Editor {
         }
         
         private static void CreateEventSystem() {
-            GameObject eventSystem = new GameObject("EventSystem");
-            eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
-            eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-            
-            Debug.Log("✅ EventSystem created for UI input");
+            UnityEngine.EventSystems.EventSystem eventSystem = UnityEngine.Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>();
+            GameObject eventSystemGO = eventSystem != null ? eventSystem.gameObject : new GameObject("EventSystem");
+            if (eventSystem == null)
+            {
+                eventSystem = eventSystemGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            }
+
+#if ENABLE_INPUT_SYSTEM
+            if (eventSystemGO.GetComponent<InputSystemUIInputModule>() == null)
+            {
+                eventSystemGO.AddComponent<InputSystemUIInputModule>();
+            }
+
+            UnityEngine.EventSystems.StandaloneInputModule legacyModule = eventSystemGO.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            if (legacyModule != null)
+            {
+                UnityEngine.Object.DestroyImmediate(legacyModule);
+            }
+
+            Debug.Log("✅ EventSystem configured with InputSystemUIInputModule");
+#else
+            if (eventSystemGO.GetComponent<UnityEngine.EventSystems.StandaloneInputModule>() == null)
+            {
+                eventSystemGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+
+            Debug.Log("✅ EventSystem configured with StandaloneInputModule");
+#endif
         }
         
         [MenuItem("Hustle Economy/Add Core Scene to Build Settings")]

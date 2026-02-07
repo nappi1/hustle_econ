@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
+
 namespace Core
 {
     public class InputManager : MonoBehaviour
@@ -42,7 +46,14 @@ namespace Core
             SteerRight
         }
 
-        [System.Serializable]
+        private enum InputBackend
+        {
+            None,
+            Legacy,
+            NewInputSystem
+        }
+
+        [Serializable]
         public class KeyBinding
         {
             public InputAction action;
@@ -51,7 +62,7 @@ namespace Core
             public string gamepadButton;
         }
 
-        [System.Serializable]
+        [Serializable]
         public class InputSettings
         {
             public List<KeyBinding> keyBindings;
@@ -60,7 +71,7 @@ namespace Core
             public float deadZone = 0.15f;
         }
 
-        [System.Serializable]
+        [Serializable]
         public class InputState
         {
             public InputContext currentContext;
@@ -71,6 +82,28 @@ namespace Core
             public Dictionary<InputAction, bool> actionDowns;
             public Dictionary<InputAction, bool> actionUps;
         }
+
+        [Header("Input Backend")]
+        [SerializeField] private bool preferNewInputSystem = true;
+        [SerializeField] private bool enableDebug = false;
+
+#if ENABLE_INPUT_SYSTEM
+        [Header("New Input System")]
+        [SerializeField] private InputActionAsset actions;
+        [SerializeField] private string playerActionMapName = "Player";
+        [SerializeField] private string uiActionMapName = "UI";
+        [SerializeField] private string moveActionName = "Move";
+        [SerializeField] private string lookActionName = "Look";
+        [SerializeField] private string runActionName = "Run";
+        [SerializeField] private string interactActionName = "Interact";
+
+        private InputActionMap playerActionMap;
+        private InputActionMap uiActionMap;
+        private UnityEngine.InputSystem.InputAction moveAction;
+        private UnityEngine.InputSystem.InputAction lookAction;
+        private readonly Dictionary<InputAction, UnityEngine.InputSystem.InputAction> mappedNewActions =
+            new Dictionary<InputAction, UnityEngine.InputSystem.InputAction>();
+#endif
 
         private static InputManager instance;
         public static InputManager Instance
@@ -100,10 +133,14 @@ namespace Core
         private InputState state;
         private Stack<InputContext> contextStack;
 
+        private readonly Dictionary<InputAction, bool> simulatedActions = new Dictionary<InputAction, bool>();
         private Vector2 simulatedMovement;
-        private Dictionary<InputAction, bool> simulatedActions = new Dictionary<InputAction, bool>();
         private bool useSimulatedMovement;
         private bool useSimulatedActions;
+
+        private InputBackend activeBackend;
+        private bool warnedNoInputAvailable;
+        private float lastDebugMovementLogTime;
 
         private void Awake()
         {
@@ -112,9 +149,9 @@ namespace Core
                 Destroy(gameObject);
                 return;
             }
+
             instance = this;
             DontDestroyOnLoad(gameObject);
-
             Initialize();
         }
 
@@ -132,6 +169,17 @@ namespace Core
             state.currentContext = InputContext.Gameplay;
 
             InitializeDefaultBindings();
+            RefreshBackend();
+        }
+
+        public bool IsUsingNewInputSystem()
+        {
+            return activeBackend == InputBackend.NewInputSystem;
+        }
+
+        public bool IsUsingLegacyInput()
+        {
+            return activeBackend == InputBackend.Legacy;
         }
 
         private void Update()
@@ -142,6 +190,7 @@ namespace Core
             ProcessMovementInput();
             ProcessActionInput();
             ProcessMouseInput();
+            DebugLogMovementIfNeeded();
         }
 
         public void LoadKeyBindings(InputSettings inputSettings)
@@ -157,7 +206,7 @@ namespace Core
 
             if (settings.keyBindings != null)
             {
-                foreach (var binding in settings.keyBindings)
+                foreach (KeyBinding binding in settings.keyBindings)
                 {
                     bindings[binding.action] = binding;
                 }
@@ -259,7 +308,18 @@ namespace Core
 
         public Vector3 GetMousePosition()
         {
+#if ENABLE_INPUT_SYSTEM
+            if (IsUsingNewInputSystem() && Mouse.current != null)
+            {
+                return Mouse.current.position.ReadValue();
+            }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
             return Input.mousePosition;
+#else
+            return Vector3.zero;
+#endif
         }
 
         public bool IsMouseOverUI()
@@ -325,7 +385,6 @@ namespace Core
         {
             useSimulatedMovement = true;
             simulatedMovement = direction;
-            state.movementInput = direction;
         }
 
         public void SetContextForTesting(InputContext context)
@@ -362,10 +421,33 @@ namespace Core
             };
 
             bindings.Clear();
-            foreach (var binding in settings.keyBindings)
+            foreach (KeyBinding binding in settings.keyBindings)
             {
                 bindings[binding.action] = binding;
             }
+        }
+
+        private void RefreshBackend()
+        {
+            warnedNoInputAvailable = false;
+            activeBackend = InputBackend.None;
+
+#if ENABLE_INPUT_SYSTEM
+            if (preferNewInputSystem && InitializeNewInputSystem())
+            {
+                activeBackend = InputBackend.NewInputSystem;
+                DebugLogPath($"InputManager active path: NewInputSystem (map={GetActiveMapName()})");
+                return;
+            }
+            DisableNewInputMaps();
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            activeBackend = InputBackend.Legacy;
+            DebugLogPath("InputManager active path: Legacy");
+#else
+            WarnNoInputAvailable();
+#endif
         }
 
         private void ProcessMovementInput()
@@ -384,64 +466,85 @@ namespace Core
                 {
                     state.movementInput.Normalize();
                 }
-                if (useSimulatedActions)
-                {
-                    state.isRunning = simulatedActions.ContainsKey(InputAction.Run) && simulatedActions[InputAction.Run];
-                }
-                else
-                {
-                    state.isRunning = false;
-                }
+
+                state.isRunning = useSimulatedActions &&
+                                  simulatedActions.ContainsKey(InputAction.Run) &&
+                                  simulatedActions[InputAction.Run];
                 return;
             }
 
-            float horizontal = 0f;
-            float vertical = 0f;
+            Vector2 movement = Vector2.zero;
+            bool running = false;
 
-            if (GetKeyHeld(InputAction.MoveForward)) vertical += 1f;
-            if (GetKeyHeld(InputAction.MoveBackward)) vertical -= 1f;
-            if (GetKeyHeld(InputAction.MoveLeft)) horizontal -= 1f;
-            if (GetKeyHeld(InputAction.MoveRight)) horizontal += 1f;
-
-            state.movementInput = new Vector2(horizontal, vertical);
-
-            if (state.movementInput.magnitude > 1f)
+            if (activeBackend == InputBackend.NewInputSystem)
             {
-                state.movementInput.Normalize();
+                movement = ReadNewMovement();
+                running = ReadNewRunPressed();
+            }
+            else if (activeBackend == InputBackend.Legacy)
+            {
+                movement = ReadLegacyMovement();
+                running = GetLegacyKeyHeld(InputAction.Run);
+            }
+            else
+            {
+                WarnNoInputAvailable();
             }
 
-            bool runHeld = useSimulatedActions && simulatedActions.ContainsKey(InputAction.Run)
-                ? simulatedActions[InputAction.Run]
-                : GetKeyHeld(InputAction.Run);
-            state.isRunning = runHeld;
+            if (movement.magnitude > 1f)
+            {
+                movement.Normalize();
+            }
+
+            state.movementInput = movement;
+            state.isRunning = running;
         }
 
         private void ProcessActionInput()
         {
-            foreach (var binding in bindings)
+            foreach (KeyValuePair<InputAction, KeyBinding> binding in bindings)
             {
                 InputAction action = binding.Key;
-
                 bool wasPressed = state.actionStates.ContainsKey(action) && state.actionStates[action];
+
                 bool isPressed;
+                bool down;
+                bool up;
+
                 if (useSimulatedActions)
                 {
                     isPressed = simulatedActions.ContainsKey(action) && simulatedActions[action];
+                    down = isPressed && !wasPressed;
+                    up = !isPressed && wasPressed;
+                }
+                else if (activeBackend == InputBackend.NewInputSystem)
+                {
+                    isPressed = GetNewActionCurrent(action);
+                    down = GetNewActionDown(action, wasPressed);
+                    up = GetNewActionUp(action, wasPressed);
+                }
+                else if (activeBackend == InputBackend.Legacy)
+                {
+                    isPressed = GetLegacyKeyHeld(action);
+                    down = isPressed && !wasPressed;
+                    up = !isPressed && wasPressed;
                 }
                 else
                 {
-                    isPressed = GetKeyHeld(action);
+                    isPressed = false;
+                    down = false;
+                    up = false;
                 }
 
                 state.actionStates[action] = isPressed;
 
-                if (isPressed && !wasPressed)
+                if (down)
                 {
                     state.actionDowns[action] = true;
                     OnActionPressed?.Invoke(action);
                 }
 
-                if (!isPressed && wasPressed)
+                if (up)
                 {
                     state.actionUps[action] = true;
                     OnActionReleased?.Invoke(action);
@@ -451,39 +554,306 @@ namespace Core
 
         private void ProcessMouseInput()
         {
-            if (!IsLegacyInputAvailable())
+            if (activeBackend == InputBackend.NewInputSystem)
             {
-                state.mouseInput = Vector2.zero;
+                state.mouseInput = ReadNewLook();
                 return;
             }
 
-            state.mouseInput = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
+            if (activeBackend == InputBackend.Legacy)
+            {
+                state.mouseInput = ReadLegacyLook();
+                return;
+            }
+
+            state.mouseInput = Vector2.zero;
         }
 
-        private bool GetKeyHeld(InputAction action)
+        private Vector2 ReadLegacyMovement()
         {
+            float horizontal = 0f;
+            float vertical = 0f;
+
+            if (GetLegacyKeyHeld(InputAction.MoveForward)) vertical += 1f;
+            if (GetLegacyKeyHeld(InputAction.MoveBackward)) vertical -= 1f;
+            if (GetLegacyKeyHeld(InputAction.MoveLeft)) horizontal -= 1f;
+            if (GetLegacyKeyHeld(InputAction.MoveRight)) horizontal += 1f;
+
+            return new Vector2(horizontal, vertical);
+        }
+
+        private Vector2 ReadLegacyLook()
+        {
+#if ENABLE_LEGACY_INPUT_MANAGER
+            return new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
+#else
+            return Vector2.zero;
+#endif
+        }
+
+        private bool GetLegacyKeyHeld(InputAction action)
+        {
+#if ENABLE_LEGACY_INPUT_MANAGER
             if (!bindings.ContainsKey(action))
             {
                 return false;
             }
 
             KeyBinding binding = bindings[action];
-            if (!IsLegacyInputAvailable())
+            return Input.GetKey(binding.primaryKey) ||
+                   (binding.alternateKey != KeyCode.None && Input.GetKey(binding.alternateKey));
+#else
+            return false;
+#endif
+        }
+
+#if ENABLE_INPUT_SYSTEM
+        private bool InitializeNewInputSystem()
+        {
+            mappedNewActions.Clear();
+            playerActionMap = null;
+            uiActionMap = null;
+            moveAction = null;
+            lookAction = null;
+
+            if (actions == null)
+            {
+                actions = Resources.Load<InputActionAsset>("InputActions");
+                if (actions == null)
+                {
+                    DebugLogPath("InputManager: no InputActionAsset assigned/found at Resources/InputActions.");
+                    return false;
+                }
+            }
+
+            playerActionMap = FindActionMap(actions, playerActionMapName, moveActionName, "Movement");
+            if (playerActionMap == null)
+            {
+                DebugLogPath($"InputManager: action map '{playerActionMapName}' not found.");
+                return false;
+            }
+
+            uiActionMap = FindActionMap(actions, uiActionMapName, "Submit", "Navigate");
+
+            moveAction = FindAction(playerActionMap, moveActionName, "Movement");
+            lookAction = FindAction(playerActionMap, lookActionName, "MouseDelta", "PointerDelta");
+
+            if (moveAction == null)
+            {
+                DebugLogPath($"InputManager: move action '{moveActionName}' not found in map '{playerActionMap.name}'.");
+            }
+
+            MapAction(InputAction.Run, playerActionMap, runActionName, "Sprint");
+            MapAction(InputAction.Interact, playerActionMap, interactActionName, "Use");
+            MapAction(InputAction.ToggleCamera, playerActionMap, "ToggleCamera", "SwitchCamera");
+            MapAction(InputAction.OpenPhone, playerActionMap, "OpenPhone", "Phone");
+            MapAction(InputAction.OpenMenu, playerActionMap, "OpenMenu", "Pause", "Menu");
+
+            if (uiActionMap != null)
+            {
+                MapAction(InputAction.Submit, uiActionMap, "Submit");
+                MapAction(InputAction.Cancel, uiActionMap, "Cancel", "Back");
+                MapAction(InputAction.NavigateUp, uiActionMap, "NavigateUp");
+                MapAction(InputAction.NavigateDown, uiActionMap, "NavigateDown");
+                MapAction(InputAction.NavigateLeft, uiActionMap, "NavigateLeft");
+                MapAction(InputAction.NavigateRight, uiActionMap, "NavigateRight");
+            }
+
+            playerActionMap.Enable();
+            return true;
+        }
+
+        private void DisableNewInputMaps()
+        {
+            if (playerActionMap != null)
+            {
+                playerActionMap.Disable();
+            }
+        }
+
+        private InputActionMap FindActionMap(InputActionAsset asset, string preferredName, params string[] requiredActionHints)
+        {
+            if (asset == null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrEmpty(preferredName))
+            {
+                InputActionMap map = asset.FindActionMap(preferredName, false);
+                if (map != null)
+                {
+                    return map;
+                }
+            }
+
+            foreach (InputActionMap map in asset.actionMaps)
+            {
+                if (requiredActionHints == null || requiredActionHints.Length == 0)
+                {
+                    return map;
+                }
+
+                foreach (string hint in requiredActionHints)
+                {
+                    if (FindAction(map, hint) != null)
+                    {
+                        return map;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private UnityEngine.InputSystem.InputAction FindAction(InputActionMap map, params string[] names)
+        {
+            if (map == null || names == null)
+            {
+                return null;
+            }
+
+            foreach (string actionName in names)
+            {
+                if (string.IsNullOrEmpty(actionName))
+                {
+                    continue;
+                }
+
+                UnityEngine.InputSystem.InputAction action = map.FindAction(actionName, false);
+                if (action != null)
+                {
+                    return action;
+                }
+            }
+
+            return null;
+        }
+
+        private void MapAction(InputAction internalAction, InputActionMap map, params string[] names)
+        {
+            UnityEngine.InputSystem.InputAction found = FindAction(map, names);
+            if (found != null)
+            {
+                mappedNewActions[internalAction] = found;
+            }
+            else
+            {
+                DebugLogPath($"InputManager: missing action mapping for {internalAction} ({string.Join("/", names)}) in map '{map?.name}'.");
+            }
+        }
+
+        private Vector2 ReadNewMovement()
+        {
+            return moveAction != null ? moveAction.ReadValue<Vector2>() : Vector2.zero;
+        }
+
+        private Vector2 ReadNewLook()
+        {
+            return lookAction != null ? lookAction.ReadValue<Vector2>() : Vector2.zero;
+        }
+
+        private bool ReadNewRunPressed()
+        {
+            return mappedNewActions.TryGetValue(InputAction.Run, out UnityEngine.InputSystem.InputAction run) &&
+                   (run.IsPressed() || run.ReadValue<float>() > 0.5f);
+        }
+
+        private bool GetNewActionCurrent(InputAction action)
+        {
+            if (action == InputAction.MoveForward) return state.movementInput.y > 0.1f;
+            if (action == InputAction.MoveBackward) return state.movementInput.y < -0.1f;
+            if (action == InputAction.MoveLeft) return state.movementInput.x < -0.1f;
+            if (action == InputAction.MoveRight) return state.movementInput.x > 0.1f;
+
+            if (!mappedNewActions.TryGetValue(action, out UnityEngine.InputSystem.InputAction mapped) || mapped == null)
             {
                 return false;
             }
 
-            return Input.GetKey(binding.primaryKey) ||
-                   (binding.alternateKey != KeyCode.None && Input.GetKey(binding.alternateKey));
+            return mapped.IsPressed() || mapped.ReadValue<float>() > 0.5f;
         }
 
-        private static bool IsLegacyInputAvailable()
+        private bool GetNewActionDown(InputAction action, bool wasPressed)
         {
-#if ENABLE_LEGACY_INPUT_MANAGER
-            return true;
-#else
-            return false;
+            if (action == InputAction.MoveForward ||
+                action == InputAction.MoveBackward ||
+                action == InputAction.MoveLeft ||
+                action == InputAction.MoveRight)
+            {
+                return GetNewActionCurrent(action) && !wasPressed;
+            }
+
+            if (!mappedNewActions.TryGetValue(action, out UnityEngine.InputSystem.InputAction mapped) || mapped == null)
+            {
+                return false;
+            }
+
+            return mapped.WasPressedThisFrame();
+        }
+
+        private bool GetNewActionUp(InputAction action, bool wasPressed)
+        {
+            if (action == InputAction.MoveForward ||
+                action == InputAction.MoveBackward ||
+                action == InputAction.MoveLeft ||
+                action == InputAction.MoveRight)
+            {
+                return !GetNewActionCurrent(action) && wasPressed;
+            }
+
+            if (!mappedNewActions.TryGetValue(action, out UnityEngine.InputSystem.InputAction mapped) || mapped == null)
+            {
+                return false;
+            }
+
+            return mapped.WasReleasedThisFrame();
+        }
+
+        private string GetActiveMapName()
+        {
+            return playerActionMap != null ? playerActionMap.name : "none";
+        }
 #endif
+
+        private void DebugLogPath(string message)
+        {
+            if (enableDebug)
+            {
+                Debug.Log(message);
+            }
+        }
+
+        private void WarnNoInputAvailable()
+        {
+            if (warnedNoInputAvailable)
+            {
+                return;
+            }
+
+            warnedNoInputAvailable = true;
+            Debug.LogWarning("InputManager: no available input backend (new input map unavailable, legacy disabled).");
+        }
+
+        private void DebugLogMovementIfNeeded()
+        {
+            if (!enableDebug)
+            {
+                return;
+            }
+
+            if (state.movementInput.sqrMagnitude < 0.001f)
+            {
+                return;
+            }
+
+            if (Time.unscaledTime - lastDebugMovementLogTime < 0.5f)
+            {
+                return;
+            }
+
+            lastDebugMovementLogTime = Time.unscaledTime;
+            Debug.Log($"InputManager movement: {state.movementInput} (run={state.isRunning})");
         }
     }
 }

@@ -19,8 +19,13 @@ All systems and UI components listed in the implementation guide exist as script
 
 ### Input System Status
 - Project uses the new Input System.
-- Legacy input access is gated (ENABLE_LEGACY_INPUT_MANAGER) in InputManager and ClickTargetsMinigame.
-- There is still no native Input System binding layer; current runtime input will be inert unless legacy input is enabled.
+- `InputManager` now supports both paths:
+  - New Input System action-map binding when available.
+  - Legacy fallback when legacy input is enabled.
+- Input Actions are standardized and reproducible via editor generator:
+  - `Assets/Editor/InputActionsGenerator.cs`
+  - Primary asset: `Assets/Settings/Input/InputActions.inputactions`
+  - Runtime `Resources.Load` copy: `Assets/Resources/InputActions.inputactions`
 
 ### Scene/Playtest Status
 - Scene loading is functional but requires scenes to be in Build Settings.
@@ -40,9 +45,11 @@ All systems and UI components listed in the implementation guide exist as script
 - Currently only GameManager minimal save data exists.
 - System-level SaveData APIs are still missing. These should be implemented before full save/load validation.
 
-### 3) Native Input System Migration
-- InputManager and ClickTargetsMinigame still rely on legacy input calls gated by `ENABLE_LEGACY_INPUT_MANAGER`.
-- Add native Input System bindings and route gameplay/minigame input through them.
+### 3) Input Validation & Scene Wiring
+- Run play-mode validation in both Active Input Handling modes:
+  - New Input System only
+  - Both
+- Verify action-map references and UI module behavior in generated/rebuilt core scenes.
 
 ### 4) Remaining Spec-Compliance Gaps
 - EventSystem event-minigame creation and richer scheduling.
