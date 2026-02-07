@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
-using HustleEconomy.Core;
 using Core;
 
 namespace Tests.Core

@@ -4,8 +4,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using Core;
-using HustleEconomy.Core;
-using HustleEconomy.UI;
+using UI;
 
 namespace Tests.UI
 {

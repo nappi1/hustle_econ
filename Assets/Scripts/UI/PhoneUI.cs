@@ -3,9 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Core;
-using HustleEconomy.Core;
 
-namespace HustleEconomy.UI
+namespace UI
 {
     public class PhoneUI : MonoBehaviour
     {

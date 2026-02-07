@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using HustleEconomy.Core;
 
 namespace Core
 {
@@ -406,12 +405,12 @@ namespace Core
 
         private bool IsPlayerBusy()
         {
-            if (HustleEconomy.Core.ActivitySystem.Instance == null)
+            if (ActivitySystem.Instance == null)
             {
                 return false;
             }
 
-            var activities = HustleEconomy.Core.ActivitySystem.Instance.GetActiveActivities("player");
+            var activities = ActivitySystem.Instance.GetActiveActivities("player");
             return activities != null && activities.Count > 0;
         }
 
