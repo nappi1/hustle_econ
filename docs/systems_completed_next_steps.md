@@ -10,10 +10,10 @@ All systems and UI components listed in the implementation guide exist as script
 - New components: InputManager, PlayerController, CameraController, HUDController, PhoneUI, MinigameUI, GameManager, InteractionSystem.
 
 ### Integration Status (High-Level)
-- ActivitySystem ? MinigameSystem: wired (start/pause/resume/end + performance sync).
-- ActivitySystem ? CameraController: wired for work activities (first-person toggles).
-- ActivitySystem ? DetectionSystem: wired for work detection + JobSystem warnings.
-- LocationSystem ? GameManager: wired (scene load via GameManager), guarded for build settings.
+- ActivitySystem -> MinigameSystem: wired (start/pause/resume/end + performance sync).
+- ActivitySystem -> CameraController: wired for work activities (first-person toggles).
+- ActivitySystem -> DetectionSystem: wired for work detection + JobSystem warnings.
+- LocationSystem -> GameManager: wired (scene load via GameManager), guarded for build settings.
 - HeatSystem ? DetectionSystem: wired patrol frequency and detection sensitivity.
 - EventSystem: now uses RelationshipSystem for attended events without NPC duplication.
 
@@ -49,7 +49,7 @@ All systems and UI components listed in the implementation guide exist as script
 ## Known Discrepancies (Code vs Spec)
 
 ### High-Impact / Should Fix Soon
-- PhoneUI still uses current ActivitySystem signature; spec expects CreateActivity(playerId, type, context). We added an overload, but PhoneUI uses it only for drug dealing. Other app activities are not context-based yet.
+- PhoneUI uses the CreateActivity(playerId, type, context) overload only for drug dealing. Other app activities are not context-based yet.
 - ActivitySystem work earnings use JobSystem when available but still fallback to fixed 20/hr; more accurate per-job rates should be driven by JobSystem data for all work activities.
 - Skill mapping is still minigameId string heuristics; spec implies a more robust mapping from activity/minigame data.
 - InteractionSystem job validation only checks employment + job active; does not validate shift schedule or location constraints.
@@ -59,6 +59,13 @@ All systems and UI components listed in the implementation guide exist as script
 - HUDController uses GetCurrentGameTime/GetGameDate wrappers rather than spec-provided game date structures.
 - EconomySystem lacks OnBalanceChanged event; HUD relies on manual updates.
 
+### Editor Tools (Current State)
+- Core/Office scene builders and prefab generators exist under `Assets/Editor`.
+- DebugHelpers/TestDataSetup are aligned to runtime APIs and rely on specific IDs:
+  - Locations: `office_main`, `apartment_player`
+  - Job: `job1`
+- Scenes must be in Build Settings for play-mode scene loading.
+
 ### Missing Systems (Spec References)
 - CriminalRecordSystem
 - CameraEffects
@@ -67,12 +74,7 @@ All systems and UI components listed in the implementation guide exist as script
 - PhoneSystem
 
 ## Discrepancies Document Review
-`docs/IMPLEMENTATION_DISCREPANCIES.md` is mostly accurate after recent updates, but it still lists several items that are now resolved:
-- ActivitySystem wiring (minigame, camera, detection) is done.
-- TimeEnergySystem missing APIs are resolved.
-- JobSystem and RelationshipSystem missing APIs are resolved.
-
-It still correctly calls out:
+`docs/IMPLEMENTATION_DISCREPANCIES.md` is accurate for the current codebase and highlights remaining gaps:
 - Missing external systems (CriminalRecordSystem, VehicleSystem, ClothingSystem, PhoneSystem).
 - Areas where enums exist but some systems still use generic values.
 - Incomplete UI and scene scaffolding.
