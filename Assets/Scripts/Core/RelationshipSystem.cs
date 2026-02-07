@@ -103,12 +103,21 @@ namespace Core
         }
 
         [System.Serializable]
+        public class BodyPreferences
+        {
+            public Dictionary<BodySystem.BodyType, float> bodyTypeWeights;
+            public float minimumAttractiveness;
+            public float groomingWeight;
+        }
+
+        [System.Serializable]
         public struct PlayerAction
         {
             public ActionType type;
             public string details;
             public DateTime timestamp;
             public int memorability;
+            public bool isPositive;
         }
 
         [System.Serializable]
@@ -141,6 +150,7 @@ namespace Core
             public Dictionary<NPCValue, float> values;
             public Dictionary<NPCTolerance, ToleranceLevel> tolerances;
             public SexualBoundaryType sexualBoundary;
+            public BodyPreferences bodyPreferences;
         }
 
         [System.Serializable]
@@ -154,6 +164,7 @@ namespace Core
             public Dictionary<NPCValue, float> values;
             public Dictionary<NPCTolerance, ToleranceLevel> tolerances;
             public SexualBoundaryType sexualBoundary;
+            public BodyPreferences bodyPreferences;
             public RelationshipStatus status;
             public List<ObservedEvent> memory;
             public int memoryCapacity = 50;
@@ -230,6 +241,7 @@ namespace Core
                 values = data.values ?? new Dictionary<NPCValue, float>(),
                 tolerances = data.tolerances ?? new Dictionary<NPCTolerance, ToleranceLevel>(),
                 sexualBoundary = data.sexualBoundary,
+                bodyPreferences = data.bodyPreferences,
                 status = RelationshipStatus.Active,
                 memory = new List<ObservedEvent>(),
                 memoryCapacity = 50,
@@ -249,6 +261,11 @@ namespace Core
                 return 0f;
             }
             return npc.relationshipScore;
+        }
+
+        public List<NPC> GetNPCs(string playerId)
+        {
+            return npcs.Values.ToList();
         }
 
         public void ModifyRelationship(string npcId, float delta, string reason)
@@ -363,7 +380,7 @@ namespace Core
             return $"{npc.name} (Upset): {scenario} response";
         }
 
-        private NPC GetNPC(string npcId)
+        public NPC GetNPC(string npcId)
         {
             if (string.IsNullOrEmpty(npcId) || !npcs.ContainsKey(npcId))
             {

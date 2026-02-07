@@ -45,6 +45,8 @@ namespace Core
             Gift,
             Theft,
             Gambling,
+            SexWork,
+            SugarRelationship,
             Other
         }
 
@@ -58,6 +60,8 @@ namespace Core
             Purchase,
             LoanPayment,
             Bribe,
+            Blackmail,
+            Personal,
             Other
         }
 
@@ -135,10 +139,12 @@ namespace Core
                 case IncomeSource.BusinessProfit:
                 case IncomeSource.Gambling:
                 case IncomeSource.Gift:
+                case IncomeSource.SugarRelationship:
                     profile.legalIncome += amount;
                     break;
                 case IncomeSource.DrugSale:
                 case IncomeSource.Theft:
+                case IncomeSource.SexWork:
                     profile.illegalIncome += amount;
                     break;
                 case IncomeSource.Other:
@@ -197,7 +203,7 @@ namespace Core
                 type,
                 null,
                 description,
-                type != ExpenseType.Bribe
+                type != ExpenseType.Bribe && type != ExpenseType.Blackmail
             );
 
             profile.history.Add(transaction);
@@ -395,6 +401,7 @@ namespace Core
             {
                 case IncomeSource.DrugSale:
                 case IncomeSource.Theft:
+                case IncomeSource.SexWork:
                     return false;
                 default:
                     return true;

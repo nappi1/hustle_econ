@@ -254,13 +254,13 @@ namespace Core
             int warningsThisShift = 0;
             if (caughtSlacking)
             {
-                TriggerWarning(jobId, "Caught slacking off");
+                TriggerWarningForJob(jobId, "Caught slacking off");
                 warningsThisShift++;
             }
 
             if (performanceScore < 30f)
             {
-                TriggerWarning(jobId, "Poor performance");
+                TriggerWarningForJob(jobId, "Poor performance");
                 warningsThisShift++;
             }
 
@@ -290,7 +290,38 @@ namespace Core
             return job != null ? job.warningCount : 0;
         }
 
-        public void TriggerWarning(string jobId, string reason)
+        public void TriggerWarning(string playerId, string reason)
+        {
+            if (string.IsNullOrEmpty(playerId))
+            {
+                return;
+            }
+
+            string jobId = null;
+            if (activeShifts.TryGetValue(playerId, out string activeJobId))
+            {
+                jobId = activeJobId;
+            }
+            else if (playerJobs.TryGetValue(playerId, out List<string> jobsForPlayer))
+            {
+                foreach (string id in jobsForPlayer)
+                {
+                    Job job = GetJob(id);
+                    if (job != null && job.isActive)
+                    {
+                        jobId = id;
+                        break;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(jobId))
+            {
+                TriggerWarningForJob(jobId, reason);
+            }
+        }
+
+        public void TriggerWarningForJob(string jobId, string reason)
         {
             Job job = GetJob(jobId);
             if (job == null)
@@ -305,6 +336,80 @@ namespace Core
             {
                 FirePlayer(jobId, "Exceeded warning limit");
             }
+        }
+
+        public void FireAllJobs(string playerId, string reason)
+        {
+            if (string.IsNullOrEmpty(playerId))
+            {
+                return;
+            }
+
+            if (!playerJobs.TryGetValue(playerId, out List<string> jobsForPlayer) || jobsForPlayer == null)
+            {
+                return;
+            }
+
+            List<string> jobIds = new List<string>(jobsForPlayer);
+            foreach (string jobId in jobIds)
+            {
+                Job job = GetJob(jobId);
+                if (job != null && job.isActive)
+                {
+                    FirePlayer(jobId, reason);
+                }
+            }
+
+            jobsForPlayer.Clear();
+        }
+
+        public void CheckTerminationForSexWork(string playerId)
+        {
+            if (string.IsNullOrEmpty(playerId))
+            {
+                return;
+            }
+
+            if (!playerJobs.TryGetValue(playerId, out List<string> jobsForPlayer) || jobsForPlayer == null)
+            {
+                return;
+            }
+
+            foreach (string jobId in new List<string>(jobsForPlayer))
+            {
+                Job job = GetJob(jobId);
+                if (job != null && job.isActive && job.requiresCleanRecord)
+                {
+                    FirePlayer(jobId, "Terminated due to sex work");
+                }
+            }
+        }
+
+        public Job GetCurrentJob(string playerId)
+        {
+            if (string.IsNullOrEmpty(playerId))
+            {
+                return null;
+            }
+
+            if (activeShifts.TryGetValue(playerId, out string activeJobId))
+            {
+                return GetJob(activeJobId);
+            }
+
+            if (playerJobs.TryGetValue(playerId, out List<string> jobsForPlayer))
+            {
+                foreach (string jobId in jobsForPlayer)
+                {
+                    Job job = GetJob(jobId);
+                    if (job != null && job.isActive)
+                    {
+                        return job;
+                    }
+                }
+            }
+
+            return null;
         }
 
         public void GetPromotion(string jobId, string newTitle)

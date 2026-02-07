@@ -53,11 +53,16 @@ namespace Core
         private const float PASSIVE_DRAIN_PER_HOUR = 2f;
 
         private DateTime currentTime;
+        private DateTime initialTime;
         private float timeScale = 1.0f;
         private float realTimeAccumulator = 0f;
         private float energy = 100f;
         private bool isSleeping = false;
         private Dictionary<string, ScheduledEvent> scheduledEvents;
+        private Dictionary<string, float> recurringEventIntervals;
+        private Dictionary<string, DateTime> recurringEventNextTimes;
+
+        public event Action<string> OnRecurringEvent;
 
         private void Awake()
         {
@@ -74,11 +79,14 @@ namespace Core
         private void Initialize()
         {
             currentTime = new DateTime(2024, 1, 1, 8, 0, 0);
+            initialTime = currentTime;
             energy = 100f;
             timeScale = 1.0f;
             realTimeAccumulator = 0f;
             isSleeping = false;
             scheduledEvents = new Dictionary<string, ScheduledEvent>();
+            recurringEventIntervals = new Dictionary<string, float>();
+            recurringEventNextTimes = new Dictionary<string, DateTime>();
         }
 
         private void Update()
@@ -106,6 +114,42 @@ namespace Core
             return currentTime;
         }
 
+        public float GetDeltaGameHours(float timestamp)
+        {
+            float currentHours = (float)(currentTime - initialTime).TotalHours;
+            return currentHours - timestamp;
+        }
+
+        public void ScheduleRecurringEvent(string eventId, float intervalHours)
+        {
+            if (string.IsNullOrEmpty(eventId))
+            {
+                Debug.LogWarning("ScheduleRecurringEvent: eventId is null or empty");
+                return;
+            }
+
+            if (intervalHours <= 0f)
+            {
+                Debug.LogWarning("ScheduleRecurringEvent: intervalHours must be positive");
+                return;
+            }
+
+            recurringEventIntervals[eventId] = intervalHours;
+            recurringEventNextTimes[eventId] = currentTime.AddHours(intervalHours);
+        }
+
+        public void CancelRecurringEvent(string eventId)
+        {
+            if (string.IsNullOrEmpty(eventId))
+            {
+                Debug.LogWarning("CancelRecurringEvent: eventId is null or empty");
+                return;
+            }
+
+            recurringEventIntervals.Remove(eventId);
+            recurringEventNextTimes.Remove(eventId);
+        }
+
         public void AdvanceTime(float gameMinutes)
         {
             if (gameMinutes <= 0f)
@@ -127,6 +171,7 @@ namespace Core
 
             HandleDayChanges(oldTime, currentTime);
             ProcessScheduledEvents(oldTime, currentTime);
+            ProcessRecurringEvents(oldTime, currentTime);
             OnTimeAdvanced?.Invoke(currentTime);
         }
 
@@ -228,6 +273,7 @@ namespace Core
 
             HandleDayChanges(oldTime, currentTime);
             ProcessScheduledEvents(oldTime, currentTime);
+            ProcessRecurringEvents(oldTime, currentTime);
             OnTimeAdvanced?.Invoke(currentTime);
         }
 
@@ -262,6 +308,37 @@ namespace Core
             {
                 scheduledEvent.callback?.Invoke();
                 scheduledEvents.Remove(scheduledEvent.id);
+            }
+        }
+
+        private void ProcessRecurringEvents(DateTime fromTime, DateTime toTime)
+        {
+            if (recurringEventIntervals.Count == 0)
+            {
+                return;
+            }
+
+            List<string> eventIds = new List<string>(recurringEventIntervals.Keys);
+            foreach (string eventId in eventIds)
+            {
+                if (!recurringEventNextTimes.TryGetValue(eventId, out DateTime nextTime))
+                {
+                    continue;
+                }
+
+                float intervalHours = recurringEventIntervals[eventId];
+                if (intervalHours <= 0f)
+                {
+                    continue;
+                }
+
+                while (nextTime >= fromTime && nextTime <= toTime)
+                {
+                    OnRecurringEvent?.Invoke(eventId);
+                    nextTime = nextTime.AddHours(intervalHours);
+                }
+
+                recurringEventNextTimes[eventId] = nextTime;
             }
         }
     }

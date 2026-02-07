@@ -103,6 +103,8 @@ namespace Core
 
         private float updateInterval = 0.1f;
         private float timeSinceUpdate = 0f;
+        private float patrolFrequencyMultiplier = 1f;
+        private float detectionSensitivityMultiplier = 1f;
 
         private void Awake()
         {
@@ -235,7 +237,7 @@ namespace Core
                 float observerAwareness = observer.visionRange / Mathf.Max(distance, 0.001f);
                 float detectionThreshold = activity.visualProfile;
 
-                if (observerAwareness >= detectionThreshold)
+                if ((observerAwareness * detectionSensitivityMultiplier) >= detectionThreshold)
                 {
                     DetectionResult result = new DetectionResult
                     {
@@ -292,7 +294,7 @@ namespace Core
 
                 float proximityRisk = 1f - (distance / observer.visionRange);
                 float awarenessRisk = activity.visualProfile;
-                float risk = proximityRisk * awarenessRisk;
+                float risk = proximityRisk * awarenessRisk * detectionSensitivityMultiplier;
 
                 if (risk > maxRisk)
                 {
@@ -317,6 +319,16 @@ namespace Core
             observer.currentWaypointIndex = 0;
             observer.patrolInterval = intervalSeconds;
             observer.nextPatrolTime = Time.time + intervalSeconds;
+        }
+
+        public void SetPatrolFrequency(float multiplier)
+        {
+            patrolFrequencyMultiplier = Mathf.Max(0.01f, multiplier);
+        }
+
+        public void SetDetectionSensitivity(float multiplier)
+        {
+            detectionSensitivityMultiplier = Mathf.Max(0.01f, multiplier);
         }
 
         public void SetPlayerPositionForTesting(string playerId, Vector3 position)
@@ -356,6 +368,10 @@ namespace Core
                     }
 
                     float interval = observer.patrolInterval;
+                    if (patrolFrequencyMultiplier > 0f)
+                    {
+                        interval /= patrolFrequencyMultiplier;
+                    }
                     float variance = interval * 0.1f;
                     observer.nextPatrolTime = currentTime + interval + UnityEngine.Random.Range(-variance, variance);
                 }

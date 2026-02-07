@@ -282,6 +282,12 @@ namespace Core
                 return;
             }
 
+            if (!IsSceneInBuild(sceneName))
+            {
+                Debug.LogWarning($"LoadScene: scene '{sceneName}' not in build settings");
+                return;
+            }
+
             StartCoroutine(LoadSceneCoroutine(sceneName, unloadCurrent));
         }
 
@@ -512,6 +518,20 @@ namespace Core
             }
 
             return Path.Combine(saveDir, $"{saveName}.json");
+        }
+
+        private static bool IsSceneInBuild(string sceneName)
+        {
+            if (string.IsNullOrEmpty(sceneName))
+            {
+                return false;
+            }
+
+            string directPath = sceneName.EndsWith(".unity", StringComparison.OrdinalIgnoreCase)
+                ? sceneName
+                : $"Assets/Scenes/{sceneName}.unity";
+
+            return SceneUtility.GetBuildIndexByScenePath(directPath) >= 0;
         }
     }
 }

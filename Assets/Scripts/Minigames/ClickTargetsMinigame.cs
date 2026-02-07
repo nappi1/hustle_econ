@@ -51,6 +51,11 @@ namespace Minigames
 
         public override void HandleInput()
         {
+            if (!IsLegacyInputAvailable())
+            {
+                return;
+            }
+
             if (!Input.GetMouseButtonDown(0))
             {
                 return;
@@ -128,6 +133,15 @@ namespace Minigames
         {
             float distance = Vector2.Distance(clickPos, target.position);
             return distance < 50f;
+        }
+
+        private static bool IsLegacyInputAvailable()
+        {
+#if ENABLE_LEGACY_INPUT_MANAGER
+            return true;
+#else
+            return false;
+#endif
         }
     }
 }

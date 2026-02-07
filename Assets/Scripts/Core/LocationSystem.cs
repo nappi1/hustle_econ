@@ -367,7 +367,14 @@ namespace Core
                 return;
             }
 
-            Debug.Log($"LoadLocation: {location.sceneName}");
+            GameManager gameManager = FindAnyObjectByType<GameManager>();
+            if (gameManager == null)
+            {
+                Debug.LogWarning("LoadLocation: GameManager not found, skipping scene load");
+                return;
+            }
+
+            gameManager.LoadScene(location.sceneName);
         }
     }
 }

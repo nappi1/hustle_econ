@@ -178,10 +178,14 @@ namespace Core
             }
             playerActivities[activity.playerId].Add(activityId);
 
-            Debug.LogWarning("TODO: MinigameSystem StartMinigame");
-            if (type == ActivityType.Screen)
+            if (!string.IsNullOrEmpty(activity.minigameId))
             {
-                Debug.LogWarning("TODO: CameraController SetMode (FirstPerson)");
+                MinigameSystem.Instance.StartMinigame(activity.minigameId, activityId);
+            }
+
+            if (RequiresFirstPerson(activity))
+            {
+                CameraController.Instance.OnJobStarted();
             }
 
             OnActivityStarted?.Invoke(activityId);
@@ -235,7 +239,10 @@ namespace Core
 
             activity.state = ActivityState.Paused;
             OnActivityPaused?.Invoke(activityId);
-            Debug.LogWarning("TODO: MinigameSystem PauseMinigame");
+            if (!string.IsNullOrEmpty(activity.minigameId))
+            {
+                MinigameSystem.Instance.PauseMinigame(activity.minigameId);
+            }
         }
 
         public void ResumeActivity(string activityId)
@@ -248,7 +255,10 @@ namespace Core
 
             activity.state = ActivityState.Running;
             OnActivityResumed?.Invoke(activityId);
-            Debug.LogWarning("TODO: MinigameSystem ResumeMinigame");
+            if (!string.IsNullOrEmpty(activity.minigameId))
+            {
+                MinigameSystem.Instance.ResumeMinigame(activity.minigameId);
+            }
         }
 
         public ActivityResult EndActivity(string activityId)
@@ -282,7 +292,15 @@ namespace Core
             SkillSystem.Instance.ImproveSkillFromUse(activity.playerId, SkillSystem.SkillType.Social, skillGain);
             Debug.LogWarning("TODO: Map minigameId to skill type");
 
-            Debug.LogWarning("TODO: MinigameSystem EndMinigame");
+            if (!string.IsNullOrEmpty(activity.minigameId))
+            {
+                MinigameSystem.Instance.EndMinigame(activity.minigameId);
+            }
+
+            if (RequiresFirstPerson(activity))
+            {
+                CameraController.Instance.OnJobEnded();
+            }
 
             RemoveActivity(activityId);
 
@@ -364,14 +382,27 @@ namespace Core
                     continue;
                 }
 
-                float minigamePerformance = GetMinigamePerformance(activity.minigameId);
+                float minigamePerformance = GetMinigamePerformance(activity);
                 activity.performanceScore = (activity.performanceScore * 0.9f) + (minigamePerformance * 0.1f);
 
-                if (!string.IsNullOrEmpty(activity.minigameId) && activity.minigameId.Contains("work"))
+                if (IsWorkActivity(activity))
                 {
+                    bool detectedThisTick = false;
                     if (testDetectionIds.Contains(activity.id))
                     {
+                        detectedThisTick = true;
+                    }
+                    else if (!activity.detectedSlacking)
+                    {
+                        DetectionSystem.DetectionResult result = DetectionSystem.Instance.CheckDetection(activity.playerId, activity.id);
+                        detectedThisTick = result.detected;
+                    }
+
+                    if (detectedThisTick && !activity.detectedSlacking)
+                    {
                         activity.detectedSlacking = true;
+                        JobSystem.Instance.TriggerWarning(activity.playerId, "Caught slacking");
+                        activity.performanceScore = Mathf.Max(0f, activity.performanceScore - 0.2f);
                     }
                 }
 
@@ -417,16 +448,21 @@ namespace Core
             return time;
         }
 
-        private float GetMinigamePerformance(string minigameId)
+        private float GetMinigamePerformance(Activity activity)
         {
-            if (string.IsNullOrEmpty(minigameId))
+            if (activity == null || string.IsNullOrEmpty(activity.minigameId))
             {
                 return 50f;
             }
 
-            if (testMinigamePerformance.TryGetValue(minigameId, out float performance))
+            if (testMinigamePerformance.TryGetValue(activity.minigameId, out float performance))
             {
                 return performance;
+            }
+
+            if (MinigameSystem.Instance.IsMinigameActive(activity.minigameId))
+            {
+                return MinigameSystem.Instance.GetPerformance(activity.minigameId);
             }
 
             return 50f;
@@ -450,6 +486,18 @@ namespace Core
             }
 
             return 0.5f;
+        }
+
+        private static bool RequiresFirstPerson(Activity activity)
+        {
+            return IsWorkActivity(activity);
+        }
+
+        private static bool IsWorkActivity(Activity activity)
+        {
+            return activity != null
+                && !string.IsNullOrEmpty(activity.minigameId)
+                && activity.minigameId.IndexOf("work", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private bool CanMultitask(string activityId1, string activityId2, Activity act1, Activity act2)

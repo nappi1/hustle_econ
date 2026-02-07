@@ -267,7 +267,7 @@ namespace Tests.Core
             jobSystem.CreateJob(job);
             jobSystem.ApplyForJob("player", job.id);
 
-            jobSystem.TriggerWarning(job.id, "warning");
+            jobSystem.TriggerWarningForJob(job.id, "warning");
 
             Assert.AreEqual(1, job.warningCount, "Warning count should increment");
         }
@@ -287,7 +287,7 @@ namespace Tests.Core
                 capturedReason = reason;
             };
 
-            jobSystem.TriggerWarning(job.id, "late");
+            jobSystem.TriggerWarningForJob(job.id, "late");
 
             Assert.AreEqual(job.id, capturedJob, "Warning event should pass job id");
             Assert.AreEqual("late", capturedReason, "Warning event should pass reason");
@@ -303,9 +303,9 @@ namespace Tests.Core
             bool fired = false;
             jobSystem.OnJobFired += (jobId, reason) => fired = true;
 
-            jobSystem.TriggerWarning(job.id, "1");
-            jobSystem.TriggerWarning(job.id, "2");
-            jobSystem.TriggerWarning(job.id, "3");
+            jobSystem.TriggerWarningForJob(job.id, "1");
+            jobSystem.TriggerWarningForJob(job.id, "2");
+            jobSystem.TriggerWarningForJob(job.id, "3");
 
             Assert.AreEqual(3, job.warningCount, "Should have 3 warnings");
             Assert.IsTrue(fired, "Should fire OnJobFired event");
@@ -321,9 +321,9 @@ namespace Tests.Core
 
             float before = ReputationSystem.Instance.GetReputation("player", ReputationSystem.ReputationTrack.Professional);
 
-            jobSystem.TriggerWarning(job.id, "1");
-            jobSystem.TriggerWarning(job.id, "2");
-            jobSystem.TriggerWarning(job.id, "3");
+            jobSystem.TriggerWarningForJob(job.id, "1");
+            jobSystem.TriggerWarningForJob(job.id, "2");
+            jobSystem.TriggerWarningForJob(job.id, "3");
 
             float after = ReputationSystem.Instance.GetReputation("player", ReputationSystem.ReputationTrack.Professional);
 
@@ -337,9 +337,9 @@ namespace Tests.Core
             jobSystem.CreateJob(job);
             jobSystem.ApplyForJob("player", job.id);
 
-            jobSystem.TriggerWarning(job.id, "1");
-            jobSystem.TriggerWarning(job.id, "2");
-            jobSystem.TriggerWarning(job.id, "3");
+            jobSystem.TriggerWarningForJob(job.id, "1");
+            jobSystem.TriggerWarningForJob(job.id, "2");
+            jobSystem.TriggerWarningForJob(job.id, "3");
 
             Assert.IsFalse(job.isActive, "Job should be deactivated after firing");
         }
@@ -596,9 +596,9 @@ namespace Tests.Core
             string capturedReason = null;
             jobSystem.OnJobFired += (jobId, reason) => capturedReason = reason;
 
-            jobSystem.TriggerWarning(job.id, "1");
-            jobSystem.TriggerWarning(job.id, "2");
-            jobSystem.TriggerWarning(job.id, "3");
+            jobSystem.TriggerWarningForJob(job.id, "1");
+            jobSystem.TriggerWarningForJob(job.id, "2");
+            jobSystem.TriggerWarningForJob(job.id, "3");
 
             Assert.AreEqual("Exceeded warning limit", capturedReason, "Fired reason should match");
         }
@@ -668,3 +668,4 @@ namespace Tests.Core
         }
     }
 }
+

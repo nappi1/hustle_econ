@@ -451,6 +451,12 @@ namespace Core
 
         private void ProcessMouseInput()
         {
+            if (!IsLegacyInputAvailable())
+            {
+                state.mouseInput = Vector2.zero;
+                return;
+            }
+
             state.mouseInput = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
         }
 
@@ -462,8 +468,22 @@ namespace Core
             }
 
             KeyBinding binding = bindings[action];
+            if (!IsLegacyInputAvailable())
+            {
+                return false;
+            }
+
             return Input.GetKey(binding.primaryKey) ||
                    (binding.alternateKey != KeyCode.None && Input.GetKey(binding.alternateKey));
+        }
+
+        private static bool IsLegacyInputAvailable()
+        {
+#if ENABLE_LEGACY_INPUT_MANAGER
+            return true;
+#else
+            return false;
+#endif
         }
     }
 }
