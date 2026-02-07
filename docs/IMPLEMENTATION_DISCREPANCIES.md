@@ -3,17 +3,18 @@
 This document tracks known mismatches between specs and the current implementation, plus explicit TODOs and deviations made to keep the project compiling and testable.
 
 **Global / Cross-System**
-- `TimeEnergySystem` is used instead of `TimeSystem`. Specs reference `TimeSystem.GetDeltaGameHours`, `ScheduleRecurringEvent`, and `CancelRecurringEvent`, which are not implemented.
-- Systems referenced in specs but still missing: `CriminalRecordSystem`, `CameraEffects`, `VehicleSystem`, `ClothingSystem`.
-- `EconomySystem` enums are missing spec values: `IncomeSource.SexWork`, `IncomeSource.SugarRelationship`, `ExpenseType.Blackmail`, `ExpenseType.Personal`.
-- `JobSystem` missing APIs referenced in specs: `FireAllJobs(playerId, reason)`, `TriggerWarning(playerId, ...)`, `CheckTerminationForSexWork(playerId)`.
-- `RelationshipSystem` missing APIs referenced in specs: `GetNPCsByType`, `GetNPC`, NPC `bodyPreferences`, and `PlayerAction.isPositive`.
-- Input handling: project uses the new Input System (per test failure). `InputManager` still calls legacy `UnityEngine.Input` in non-simulated paths, which will throw unless Player Settings are set to `Both` or code is updated to the new Input System.
+- `TimeEnergySystem` is used instead of `TimeSystem`. Spec-referenced APIs (`GetDeltaGameHours`, `ScheduleRecurringEvent`, `CancelRecurringEvent`) are now implemented on `TimeEnergySystem`.
+- Systems referenced in specs but still missing: `CriminalRecordSystem`, `CameraEffects`, `VehicleSystem`, `ClothingSystem`, `PhoneSystem`.
+- `EconomySystem` enums now include `IncomeSource.SexWork`, `IncomeSource.SugarRelationship`, `ExpenseType.Blackmail`, `ExpenseType.Personal`, but several systems still use `Other` and need to be updated.
+- `JobSystem` now includes `FireAllJobs`, `TriggerWarning(playerId, ...)`, `CheckTerminationForSexWork`, and `GetCurrentJob`.
+- `RelationshipSystem` now includes `GetNPCs`, `GetNPC`, NPC `bodyPreferences`, and `PlayerAction.isPositive`.
+- Input handling: project uses the new Input System. `InputManager` and `ClickTargetsMinigame` now gate legacy input access behind `ENABLE_LEGACY_INPUT_MANAGER`, but no native Input System bindings exist yet.
+- Scene loading: `LocationSystem` now calls `GameManager.LoadScene`, but tests/builds will fail unless scenes are added to Build Settings.
 
 **InputManager (`Assets/Scripts/Core/InputManager.cs`)**
 - Uses `Core` namespace; spec expects `HustleEconomy.Core`.
 - Save/Load APIs from spec are not implemented.
-- Legacy `UnityEngine.Input` is used for non-simulated input; will error when Input System is set to `Input System Package (New)`.
+- Legacy `UnityEngine.Input` is used for non-simulated input and is gated by `ENABLE_LEGACY_INPUT_MANAGER`.
 
 **PlayerController (`Assets/Scripts/Core/PlayerController.cs`)**
 - Uses `Core` namespace; spec expects `HustleEconomy.Core`.
@@ -23,19 +24,19 @@ This document tracks known mismatches between specs and the current implementati
 **CameraController (`Assets/Scripts/Core/CameraController.cs`)**
 - Uses `Core` namespace; spec expects `HustleEconomy.Core`.
 - Save/Load APIs from spec are not implemented.
-- Auto-switch “working” check uses any active activity because current `ActivitySystem` lacks `ActivityType.Work`.
-- PhoneUI integration is not wired (PhoneUI not implemented).
+- Auto-switch for work is now driven by `ActivitySystem` (work activities trigger first-person).
+- PhoneUI integration is partially wired (phone open/close calls camera hooks).
 
 **PhoneUI (`Assets/Scripts/UI/PhoneUI.cs`)**
-- Implemented in `HustleEconomy.UI`, but depends on `Core.InputManager`/`Core.CameraController` (namespace mismatch vs spec expectations).
+- Implemented in `UI`, but depends on `Core.InputManager`/`Core.CameraController` (namespace mismatch vs spec expectations).
 - Uses `TimeEnergySystem.GetCurrentTime()` and derives hours; spec expects `GetCurrentGameTime()`.
 - `ActivitySystem` API mismatch: spec expects `CreateActivity(playerId, ActivityType, context)` and `GetActiveActivity`, but current system only supports `CreateActivity(ActivityType, minigameId, durationHours)` and `GetActiveActivities` (used for phone activities).
-- `RelationshipSystem.GetNPC/GetNPCs` missing; `GetNPCName` falls back to `EntitySystem` and returns `entity.id` (no `name` field on Entity).
+- `RelationshipSystem.GetNPC/GetNPCs` now exist, but `PhoneUI` still uses the fallback path.
 - `ShowNotification` only tracks a Messages notification flag; no per-app notification data beyond bools.
 
 **JobSystem (`Assets/Scripts/Core/JobSystem.cs`)**
 - Uses `Core` namespace dependencies; spec expects `HustleEconomy.Core` across systems.
-- `TriggerWarning` fires job-level warnings by `jobId` only, not `playerId` (spec references player-level warning in some contexts).
+- `TriggerWarning(playerId, ...)` now exists; job-level warnings are `TriggerWarningForJob`.
 - Promotion uses `Random.Range(1.2f, 1.4f)`; tests assert the range.
 - RelationshipSystem integration for promotions uses `FindAnyObjectByType<Core.RelationshipSystem>()` due to namespace mismatch.
 - No ActivitySystem integration; minigame performance/detection are test overrides only.
@@ -47,7 +48,7 @@ This document tracks known mismatches between specs and the current implementati
 
 **HeatSystem (`Assets/Scripts/Core/HeatSystem.cs`)**
 - Added testing helpers: `SetHeatLevelForTesting`, `SetLastIncreaseForTesting`, `SetHasEvidenceForTesting`, `ProcessHeatDecayForTesting`, `ResolveAuditForTesting`.
-- Patrol/detection multipliers tracked internally; no DetectionSystem API exists for patrol frequency or sensitivity.
+- Patrol/detection multipliers now have DetectionSystem APIs; HeatSystem is not yet wired to call them.
 - Audit freeze/unfreeze uses TODO logs; EconomySystem lacks freeze APIs.
 - CriminalRecord/Event/Job consequences are TODO logs.
 - Used `TimeEnergySystem` for timestamps; `GetDeltaGameHours` not available.
@@ -56,7 +57,7 @@ This document tracks known mismatches between specs and the current implementati
 **LocationSystem (`Assets/Scripts/Core/LocationSystem.cs`)**
 - Added local `ActivityType` enum because ActivitySystem was missing at the time.
 - Travel cost assumes taxi (`$15`), vehicle logic stubbed (always false).
-- Scene load is a `Debug.Log`; actual scene loading not implemented.
+- Scene load now calls `GameManager.LoadScene`, which requires scenes to be in Build Settings.
 - Invitation system is TODO (always returns false).
 - Added test helpers: `CreateLocation`, `SetPlayerLocationForTesting`, `AddBannedPlayerForTesting`, `TriggerLocationLockedForTesting`.
 
@@ -69,8 +70,8 @@ This document tracks known mismatches between specs and the current implementati
 
 **AdultContentSystem (`Assets/Scripts/Core/AdultContentSystem.cs`)**
 - Uses test-registered clothing items (EntitySystem retrieval is optional; no ClothingSystem).
-- Blackmail payments use `ExpenseType.Other` (no `Blackmail` type).
-- Escort and sugar income use `IncomeSource.Other` (missing `SexWork`/`SugarRelationship`).
+- Blackmail payments still use `ExpenseType.Other` and should be updated to `ExpenseType.Blackmail`.
+- Escort and sugar income still use `IncomeSource.Other` and should be updated to `IncomeSource.SexWork`/`IncomeSource.SugarRelationship`.
 - EventSystem, CriminalRecordSystem, JobSystem integrations are TODO logs.
 - RelationshipSystem family reactions are stubbed via testing list.
 - Sugar recurring allowance and obligations are TODO logs; added `TriggerSugarAllowanceForTesting`.
@@ -79,13 +80,13 @@ This document tracks known mismatches between specs and the current implementati
 **BodySystem (`Assets/Scripts/Core/BodySystem.cs`)**
 - Clothing contribution is TODO and uses a testing override; no ClothingSystem integration.
 - NPC preferences are test overrides; RelationshipSystem lacks body preference data.
-- Grooming costs use `ExpenseType.Other` (no `Personal` type).
+- Grooming costs still use `ExpenseType.Other` and should be updated to `ExpenseType.Personal`.
 - Grooming maintenance applied via explicit test helper rather than scheduled system.
 - Maintenance now checks balance before charging; if unaffordable it downgrades without charging (prevents negative balances during maintenance).
 - Added testing helpers: `SetFitnessForTesting`, `SetBodyTypeForTesting`, `SetGroomingForTesting`, `SetNpcPreferenceForTesting`, `SetClothingVanityForTesting`, `ProcessFitnessDecayForTesting`, `ApplyGroomingMaintenanceForTesting`, `GetStateForTesting`.
 
 **EventSystem (`Assets/Scripts/Core/EventSystem.cs`)**
-- Uses `TimeEnergySystem.ScheduleEvent` for reminders; no `GetDeltaGameHours` or recurring scheduling exists.
+- Uses `TimeEnergySystem.ScheduleEvent` for reminders; recurring scheduling is available but not used here.
 - Reminder triggering is public (`TriggerReminder`) to enable deterministic testing.
 - Auto-generation uses `RelationshipSystem.CreateNPC` (side effect) to obtain name; spec expects `GetNPC` and should not create duplicates.
 - `GetNextBirthday`/family member lists are not implemented; family birthdays are scheduled as `now + 30 days`.
@@ -96,15 +97,15 @@ This document tracks known mismatches between specs and the current implementati
 - Clothing equip effects are TODO only; no `ClothingSystem` integration and no `BodySystem.UpdateAppearance`.
 - Vehicle and phone equip effects are TODO only (`VehicleSystem`, `PhoneSystem` missing).
 - Item location access uses `LocationSystem.GetPlayerLocation`; no inventory/vehicle ownership checks beyond location access.
-- `ExpenseType.Personal` is not used (EconomySystem lacks it).
+- `ExpenseType.Personal` exists but is not used in InventorySystem flows.
 - Inventory relies on `EntitySystem` ownership; internal `ownedItems` list is a cache.
 
 **ActivitySystem (`Assets/Scripts/Core/ActivitySystem.cs`)**
-- Minigame system integration is TODO (start/pause/resume/end logs only).
-- Camera mode switching is TODO (CameraController now exists but ActivitySystem does not wire it).
-- Detection during work uses test flags only; no `DetectionSystem.CheckDetection` wiring.
+- Minigame system integration is wired (start/pause/resume/end and performance sync).
+- Camera mode switching is wired for work activities (first-person on/off).
+- Detection during work is wired to `DetectionSystem.CheckDetection` with test overrides.
 - Skill XP always mapped to `SkillType.Social`; mapping from `minigameId` is TODO.
-- Work earnings use a fixed hourly rate (`20f`); `JobSystem.GetCurrentJob` not implemented.
+- Work earnings use a fixed hourly rate (`20f`); `JobSystem.GetCurrentJob` now exists but is not used here.
 - `RelationshipSystem.ObservePlayerAction` for attending events is TODO in `EventSystem`, not ActivitySystem.
 - Activity reminders and attention budget rely on internal `requiredAttention` heuristics; no `MinigameSystem` data.
 - Test helpers: `SetMinigamePerformanceForTesting`, `SetDetectionForTesting`, `AdvanceActivityTimeForTesting`, `SetActivityPhaseForTesting`.
@@ -117,10 +118,10 @@ This document tracks known mismatches between specs and the current implementati
 - `MinigameInstance.startTime` uses `DateTime.UtcNow` instead of `TimeEnergySystem` time.
 - Performance changes use the >5 threshold, but tests advance time via `AdvanceMinigameTimeForTesting`.
 - `PauseMinigame`/`ResumeMinigame` are state-only; no UI pause state or input gating beyond state.
-- For integration tests, ActivitySystem should be updated to call `MinigameSystem.StartMinigame/GetPerformance/EndMinigame` once MinigameSystem is wired in.
+- ActivitySystem now calls `MinigameSystem.StartMinigame/GetPerformance/EndMinigame`.
 
 **MinigameUI (`Assets/Scripts/UI/MinigameUI.cs`)**
-- Depends on `Core.InputManager`/`Core.CameraController` and `HustleEconomy.Core.ActivitySystem` (namespace mismatch vs spec).
+- Depends on `Core.InputManager`/`Core.CameraController` and `Core.ActivitySystem` (namespace mismatch vs spec).
 - Uses `MinigameSystem.StartMinigame(minigameId, activityId)`; spec expects a config-based Start method (no config support in current MinigameSystem).
 - ClickTargets UI uses placeholder target positions and does not read target data from MinigameSystem behavior (MinigameSystem does not expose targets).
 - Input routing updates MinigameSystem counters directly (no `RecordAction` API exists).
@@ -130,7 +131,7 @@ This document tracks known mismatches between specs and the current implementati
 - Uses `TimeEnergySystem.GetCurrentTime()`; spec expects `GetCurrentGameTime()` and `GetGameDate()` (date formatted as `yyyy-MM-dd`).
 - Energy uses `TimeEnergySystem.GetEnergyLevel()` with a fixed max of `100f`; no `GetEnergy(playerId)`/`GetMaxEnergy(playerId)` APIs exist.
 - EconomySystem has no `OnBalanceChanged`, so HUD relies on manual `UpdateMoneyDisplay` calls or test helper.
-- Activity display uses `GetActiveActivities("player")` instead of spec’s `GetActiveActivity`.
+- Activity display uses `GetActiveActivities("player")` instead of spec???s `GetActiveActivity`.
 - PhoneUI events are wired when available; no HUD prompt system implemented.
 
 **GameManager (`Assets/Scripts/Core/GameManager.cs`)**
@@ -143,29 +144,25 @@ This document tracks known mismatches between specs and the current implementati
 **InteractionSystem (`Assets/Scripts/Core/InteractionSystem.cs`)**
 - Uses `Core` namespace; spec expects `HustleEconomy.Core`.
 - Uses `InventorySystem.AddItem/RemoveItem` (no `PickupItem/DropItem` API exists).
-- Job and travel validation are stubbed because `JobSystem.GetJob/GetCurrentJob` and `LocationSystem.CanTravelTo` do not exist.
+- Job and travel validation are still stubbed; `JobSystem.GetCurrentJob` now exists but `LocationSystem.CanTravelTo` does not.
 - `HandleExamine` uses `Entity.id` and generic message (Entity has no `name`/`description` fields).
 - `LocationSystem.TravelToLocation` is used (spec references `TravelTo`).
 - Prompt integration with `HUDController` is not implemented (no HUD prompt APIs).
 **Skill/Heat/Intoxication/Location Test Adjustments**
 - Added explicit test helpers for deterministic outcomes (decay loops, DUI outcomes, patrol multipliers) because Update-driven logic and external integrations are not present.
 
-If you want any of these gaps resolved, the best next step is to add the missing system APIs or align the enums and namespaces project-wide.
+If you want any of these gaps resolved, the best next step is to align systems with the new APIs/enums and complete the remaining missing systems.
 
 **Remaining Steps From COMPLETE_IMPLEMENTATION_GUIDE.md**
-- Integration API additions:
-  - `EconomySystem` missing `IncomeSource.SexWork`, `IncomeSource.SugarRelationship`, `ExpenseType.Blackmail`, `ExpenseType.Personal`.
-  - `JobSystem` missing `FireAllJobs`, `TriggerWarning(playerId, ...)`, `CheckTerminationForSexWork`, and `GetCurrentJob`.
-  - `RelationshipSystem` missing `GetNPCs`, `GetNPC`, NPC `bodyPreferences`, and `PlayerAction.isPositive`.
-  - `TimeEnergySystem` missing `GetDeltaGameHours`, `ScheduleRecurringEvent`, `CancelRecurringEvent`.
-  - `DetectionSystem` missing `SetPatrolFrequency`, `SetDetectionSensitivity`.
-- Integration wiring (per guide):
-  - ActivitySystem ↔ MinigameSystem (start/pause/resume/end and performance sync).
-  - ActivitySystem ↔ CameraController (auto-switch for first-person activities).
-  - ActivitySystem ↔ DetectionSystem (work detection and warning flow).
-  - LocationSystem ↔ GameManager (scene load instead of Debug.Log).
+- Integration API additions are complete, but several systems still need to use the new APIs/enums.
+- Integration wiring is complete for:
+  - ActivitySystem -> MinigameSystem (start/pause/resume/end and performance sync).
+  - ActivitySystem -> CameraController (auto-switch for first-person activities).
+  - ActivitySystem -> DetectionSystem (work detection and warning flow).
+  - LocationSystem -> GameManager (scene load).
 - UI/Scene setup (manual project steps):
   - Create Core systems scene and UI canvas/prefabs.
   - Build minimal test scenes (Apartment/Office) with interactables.
   - Hook PlayerController/CameraController targets in scenes.
 - Integration tests and playtest loop after wiring is complete.
+
