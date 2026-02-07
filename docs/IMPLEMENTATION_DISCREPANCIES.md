@@ -4,10 +4,34 @@ This document tracks known mismatches between specs and the current implementati
 
 **Global / Cross-System**
 - `TimeEnergySystem` is used instead of `TimeSystem`. Specs reference `TimeSystem.GetDeltaGameHours`, `ScheduleRecurringEvent`, and `CancelRecurringEvent`, which are not implemented.
-- Systems referenced in specs but still missing: `CriminalRecordSystem`, `CameraEffects`, `VehicleSystem`, `ClothingSystem`, `PhoneSystem`.
+- Systems referenced in specs but still missing: `CriminalRecordSystem`, `CameraEffects`, `VehicleSystem`, `ClothingSystem`, `PhoneUI`, `MinigameUI`, `HUDController`, `GameManager`, `InteractionSystem`.
 - `EconomySystem` enums are missing spec values: `IncomeSource.SexWork`, `IncomeSource.SugarRelationship`, `ExpenseType.Blackmail`, `ExpenseType.Personal`.
 - `JobSystem` missing APIs referenced in specs: `FireAllJobs(playerId, reason)`, `TriggerWarning(playerId, ...)`, `CheckTerminationForSexWork(playerId)`.
 - `RelationshipSystem` missing APIs referenced in specs: `GetNPCsByType`, `GetNPC`, NPC `bodyPreferences`, and `PlayerAction.isPositive`.
+- Input handling: project uses the new Input System (per test failure). `InputManager` still calls legacy `UnityEngine.Input` in non-simulated paths, which will throw unless Player Settings are set to `Both` or code is updated to the new Input System.
+
+**InputManager (`Assets/Scripts/Core/InputManager.cs`)**
+- Uses `Core` namespace; spec expects `HustleEconomy.Core`.
+- Save/Load APIs from spec are not implemented.
+- Legacy `UnityEngine.Input` is used for non-simulated input; will error when Input System is set to `Input System Package (New)`.
+
+**PlayerController (`Assets/Scripts/Core/PlayerController.cs`)**
+- Uses `Core` namespace; spec expects `HustleEconomy.Core`.
+- Save/Load APIs from spec are not implemented.
+- Depends on `InputManager` (legacy input path) and `TimeEnergySystem` (Core namespace).
+
+**CameraController (`Assets/Scripts/Core/CameraController.cs`)**
+- Uses `Core` namespace; spec expects `HustleEconomy.Core`.
+- Save/Load APIs from spec are not implemented.
+- Auto-switch “working” check uses any active activity because current `ActivitySystem` lacks `ActivityType.Work`.
+- PhoneUI integration is not wired (PhoneUI not implemented).
+
+**PhoneUI (`Assets/Scripts/UI/PhoneUI.cs`)**
+- Implemented in `HustleEconomy.UI`, but depends on `Core.InputManager`/`Core.CameraController` (namespace mismatch vs spec expectations).
+- Uses `TimeEnergySystem.GetCurrentTime()` and derives hours; spec expects `GetCurrentGameTime()`.
+- `ActivitySystem` API mismatch: spec expects `CreateActivity(playerId, ActivityType, context)` and `GetActiveActivity`, but current system only supports `CreateActivity(ActivityType, minigameId, durationHours)` and `GetActiveActivities` (used for phone activities).
+- `RelationshipSystem.GetNPC/GetNPCs` missing; `GetNPCName` falls back to `EntitySystem` and returns `entity.id` (no `name` field on Entity).
+- `ShowNotification` only tracks a Messages notification flag; no per-app notification data beyond bools.
 
 **JobSystem (`Assets/Scripts/Core/JobSystem.cs`)**
 - Uses `Core` namespace dependencies; spec expects `HustleEconomy.Core` across systems.
@@ -77,7 +101,7 @@ This document tracks known mismatches between specs and the current implementati
 
 **ActivitySystem (`Assets/Scripts/Core/ActivitySystem.cs`)**
 - Minigame system integration is TODO (start/pause/resume/end logs only).
-- Camera mode switching is TODO (no `CameraController`).
+- Camera mode switching is TODO (CameraController now exists but ActivitySystem does not wire it).
 - Detection during work uses test flags only; no `DetectionSystem.CheckDetection` wiring.
 - Skill XP always mapped to `SkillType.Social`; mapping from `minigameId` is TODO.
 - Work earnings use a fixed hourly rate (`20f`); `JobSystem.GetCurrentJob` not implemented.
