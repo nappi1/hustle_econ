@@ -119,6 +119,12 @@ This document tracks known mismatches between specs and the current implementati
 - `PauseMinigame`/`ResumeMinigame` are state-only; no UI pause state or input gating beyond state.
 - For integration tests, ActivitySystem should be updated to call `MinigameSystem.StartMinigame/GetPerformance/EndMinigame` once MinigameSystem is wired in.
 
+**MinigameUI (`Assets/Scripts/UI/MinigameUI.cs`)**
+- Depends on `Core.InputManager`/`Core.CameraController` and `HustleEconomy.Core.ActivitySystem` (namespace mismatch vs spec).
+- Uses `MinigameSystem.StartMinigame(minigameId, activityId)`; spec expects a config-based Start method (no config support in current MinigameSystem).
+- ClickTargets UI uses placeholder target positions and does not read target data from MinigameSystem behavior (MinigameSystem does not expose targets).
+- Input routing updates MinigameSystem counters directly (no `RecordAction` API exists).
+- Context mapping is simplified: `ActivityType.Physical -> WorldSpace`, `Screen -> PhoneScreen`, `Passive -> Fullscreen` (no rich context strings in ActivitySystem).
 **Skill/Heat/Intoxication/Location Test Adjustments**
 - Added explicit test helpers for deterministic outcomes (decay loops, DUI outcomes, patrol multipliers) because Update-driven logic and external integrations are not present.
 
