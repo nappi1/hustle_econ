@@ -125,6 +125,13 @@ This document tracks known mismatches between specs and the current implementati
 - ClickTargets UI uses placeholder target positions and does not read target data from MinigameSystem behavior (MinigameSystem does not expose targets).
 - Input routing updates MinigameSystem counters directly (no `RecordAction` API exists).
 - Context mapping is simplified: `ActivityType.Physical -> WorldSpace`, `Screen -> PhoneScreen`, `Passive -> Fullscreen` (no rich context strings in ActivitySystem).
+
+**HUDController (`Assets/Scripts/UI/HUDController.cs`)**
+- Uses `TimeEnergySystem.GetCurrentTime()`; spec expects `GetCurrentGameTime()` and `GetGameDate()` (date formatted as `yyyy-MM-dd`).
+- Energy uses `TimeEnergySystem.GetEnergyLevel()` with a fixed max of `100f`; no `GetEnergy(playerId)`/`GetMaxEnergy(playerId)` APIs exist.
+- EconomySystem has no `OnBalanceChanged`, so HUD relies on manual `UpdateMoneyDisplay` calls or test helper.
+- Activity display uses `GetActiveActivities("player")` instead of spec’s `GetActiveActivity`.
+- PhoneUI events are wired when available; no HUD prompt system implemented.
 **Skill/Heat/Intoxication/Location Test Adjustments**
 - Added explicit test helpers for deterministic outcomes (decay loops, DUI outcomes, patrol multipliers) because Update-driven logic and external integrations are not present.
 
