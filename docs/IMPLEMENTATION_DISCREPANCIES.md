@@ -87,6 +87,15 @@ This document tracks known mismatches between specs and the current implementati
 - Test helpers: `SetMinigamePerformanceForTesting`, `SetDetectionForTesting`, `AdvanceActivityTimeForTesting`, `SetActivityPhaseForTesting`.
 - `CreateActivity` assigns `playerId` to `"player"`; no multi-player support without API changes.
 
+**MinigameSystem (`Assets/Scripts/Core/MinigameSystem.cs`)**
+- Only `ClickTargets` is implemented; all other types use `StubMinigame` (per spec, others deferred).
+- ClickTargets is logic-only; UI creation and destruction are TODOs.
+- Input handling is not used in tests; `SimulateClickForTesting` bypasses Unity input.
+- `MinigameInstance.startTime` uses `DateTime.UtcNow` instead of `TimeEnergySystem` time.
+- Performance changes use the >5 threshold, but tests advance time via `AdvanceMinigameTimeForTesting`.
+- `PauseMinigame`/`ResumeMinigame` are state-only; no UI pause state or input gating beyond state.
+- For integration tests, ActivitySystem should be updated to call `MinigameSystem.StartMinigame/GetPerformance/EndMinigame` once MinigameSystem is wired in.
+
 **Skill/Heat/Intoxication/Location Test Adjustments**
 - Added explicit test helpers for deterministic outcomes (decay loops, DUI outcomes, patrol multipliers) because Update-driven logic and external integrations are not present.
 
