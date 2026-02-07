@@ -42,6 +42,43 @@ namespace HustleEconomy.Editor
 #endif
         }
 
+        [MenuItem("Tools/Input/Ensure Resources InputActions")]
+        public static void EnsureResourcesInputActions()
+        {
+#if ENABLE_INPUT_SYSTEM
+            EnsureFolders();
+
+            if (!File.Exists(PrimaryAssetPath))
+            {
+                Debug.LogWarning(
+                    $"Ensure Resources InputActions: source asset missing at '{PrimaryAssetPath}'. " +
+                    "Run Tools/Input/Generate or Update InputActions first.");
+                return;
+            }
+
+            if (File.Exists(ResourcesAssetPath))
+            {
+                AssetDatabase.DeleteAsset(ResourcesAssetPath);
+            }
+
+            bool copied = AssetDatabase.CopyAsset(PrimaryAssetPath, ResourcesAssetPath);
+            if (!copied)
+            {
+                Debug.LogError(
+                    $"Ensure Resources InputActions: failed to copy '{PrimaryAssetPath}' to '{ResourcesAssetPath}'.");
+                return;
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log($"Ensured Resources InputActions: {ResourcesAssetPath}");
+#else
+            Debug.LogWarning(
+                "Ensure Resources InputActions skipped: ENABLE_INPUT_SYSTEM is not defined. " +
+                "Install/enable the Unity Input System package first.");
+#endif
+        }
+
 #if ENABLE_INPUT_SYSTEM
         private static void EnsureFolders()
         {

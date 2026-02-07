@@ -140,6 +140,7 @@ namespace Core
 
         private InputBackend activeBackend;
         private bool warnedNoInputAvailable;
+        private bool warnedMissingInputAsset;
         private float lastDebugMovementLogTime;
 
         private void Awake()
@@ -167,8 +168,10 @@ namespace Core
             };
             contextStack = new Stack<InputContext>();
             state.currentContext = InputContext.Gameplay;
+            warnedMissingInputAsset = false;
 
             InitializeDefaultBindings();
+            EnsureDefaultInputNames();
             RefreshBackend();
         }
 
@@ -431,9 +434,15 @@ namespace Core
         {
             warnedNoInputAvailable = false;
             activeBackend = InputBackend.None;
+            EnsureDefaultInputNames();
 
 #if ENABLE_INPUT_SYSTEM
-            if (preferNewInputSystem && InitializeNewInputSystem())
+            bool shouldTryNewInput = preferNewInputSystem;
+#if !ENABLE_LEGACY_INPUT_MANAGER
+            shouldTryNewInput = true;
+#endif
+
+            if (shouldTryNewInput && InitializeNewInputSystem())
             {
                 activeBackend = InputBackend.NewInputSystem;
                 DebugLogPath($"InputManager active path: NewInputSystem (map={GetActiveMapName()})");
@@ -621,7 +630,7 @@ namespace Core
                 actions = Resources.Load<InputActionAsset>("InputActions");
                 if (actions == null)
                 {
-                    DebugLogPath("InputManager: no InputActionAsset assigned/found at Resources/InputActions.");
+                    LogMissingInputAssetErrorOnce();
                     return false;
                 }
             }
@@ -629,7 +638,9 @@ namespace Core
             playerActionMap = FindActionMap(actions, playerActionMapName, moveActionName, "Movement");
             if (playerActionMap == null)
             {
-                DebugLogPath($"InputManager: action map '{playerActionMapName}' not found.");
+                Debug.LogError(
+                    $"InputManager: action map '{playerActionMapName}' not found in InputActionAsset '{actions.name}'. " +
+                    $"Available maps: {GetAvailableMapNames(actions)}");
                 return false;
             }
 
@@ -640,7 +651,9 @@ namespace Core
 
             if (moveAction == null)
             {
-                DebugLogPath($"InputManager: move action '{moveActionName}' not found in map '{playerActionMap.name}'.");
+                Debug.LogError(
+                    $"InputManager: action '{moveActionName}' not found in map '{playerActionMap.name}'. " +
+                    $"Available actions: {GetAvailableActionNames(playerActionMap)}");
             }
 
             MapAction(InputAction.Run, playerActionMap, runActionName, "Sprint");
@@ -814,6 +827,38 @@ namespace Core
         {
             return playerActionMap != null ? playerActionMap.name : "none";
         }
+
+        private static string GetAvailableMapNames(InputActionAsset asset)
+        {
+            if (asset == null || asset.actionMaps == null || asset.actionMaps.Count == 0)
+            {
+                return "(none)";
+            }
+
+            List<string> names = new List<string>();
+            foreach (InputActionMap map in asset.actionMaps)
+            {
+                names.Add(map.name);
+            }
+
+            return string.Join(", ", names);
+        }
+
+        private static string GetAvailableActionNames(InputActionMap map)
+        {
+            if (map == null || map.actions == null || map.actions.Count == 0)
+            {
+                return "(none)";
+            }
+
+            List<string> names = new List<string>();
+            foreach (UnityEngine.InputSystem.InputAction action in map.actions)
+            {
+                names.Add(action.name);
+            }
+
+            return string.Join(", ", names);
+        }
 #endif
 
         private void DebugLogPath(string message)
@@ -833,6 +878,34 @@ namespace Core
 
             warnedNoInputAvailable = true;
             Debug.LogWarning("InputManager: no available input backend (new input map unavailable, legacy disabled).");
+        }
+
+        private void EnsureDefaultInputNames()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (string.IsNullOrWhiteSpace(playerActionMapName)) playerActionMapName = "Player";
+            if (string.IsNullOrWhiteSpace(uiActionMapName)) uiActionMapName = "UI";
+            if (string.IsNullOrWhiteSpace(moveActionName)) moveActionName = "Move";
+            if (string.IsNullOrWhiteSpace(lookActionName)) lookActionName = "Look";
+            if (string.IsNullOrWhiteSpace(runActionName)) runActionName = "Run";
+            if (string.IsNullOrWhiteSpace(interactActionName)) interactActionName = "Interact";
+#endif
+        }
+
+        private void LogMissingInputAssetErrorOnce()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (warnedMissingInputAsset)
+            {
+                return;
+            }
+
+            warnedMissingInputAsset = true;
+            Debug.LogError(
+                "InputManager: InputActionAsset not found. " +
+                "Assign an InputActionAsset in the InputManager inspector, or place " +
+                "'InputActions.inputactions' at Assets/Resources/InputActions.inputactions.");
+#endif
         }
 
         private void DebugLogMovementIfNeeded()
