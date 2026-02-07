@@ -1,10 +1,8 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Core;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using HustleEconomy.Data;
 
 namespace Tests.Core

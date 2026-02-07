@@ -98,6 +98,7 @@ namespace UI
         private Action<ActivitySystem.ActivityResult> activityEndedHandler;
         private Action<string> phoneMessageHandler;
         private Action<DetectionSystem.DetectionResult> detectionHandler;
+        private PhoneUI phoneInstance;
 
         private void Awake()
         {
@@ -149,14 +150,15 @@ namespace UI
                 ActivitySystem.Instance.OnActivityEnded += activityEndedHandler;
             }
 
-            if (PhoneUI.Instance != null)
+            phoneInstance = FindAnyObjectByType<PhoneUI>();
+            if (phoneInstance != null)
             {
                 phoneMessageHandler = _ =>
                 {
                     UpdateMessageCount();
                     ShowNotification("New Message", "You have a new message", NotificationType.Message, 3f);
                 };
-                PhoneUI.Instance.OnMessageReceived += phoneMessageHandler;
+                phoneInstance.OnMessageReceived += phoneMessageHandler;
             }
 
             if (DetectionSystem.Instance != null)
@@ -198,9 +200,9 @@ namespace UI
                 }
             }
 
-            if (PhoneUI.Instance != null && phoneMessageHandler != null)
+            if (phoneInstance != null && phoneMessageHandler != null)
             {
-                PhoneUI.Instance.OnMessageReceived -= phoneMessageHandler;
+                phoneInstance.OnMessageReceived -= phoneMessageHandler;
             }
 
             if (DetectionSystem.Instance != null && detectionHandler != null)
