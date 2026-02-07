@@ -3,7 +3,6 @@
 This document tracks known mismatches between specs and the current implementation, plus explicit TODOs and deviations made to keep the project compiling and testable.
 
 **Global / Cross-System**
-- Namespaces in existing core systems are `Core` while newer systems are `HustleEconomy.Core`. This is inconsistent with the Master Implementation Guide.
 - `TimeEnergySystem` is used instead of `TimeSystem`. Specs reference `TimeSystem.GetDeltaGameHours`, `ScheduleRecurringEvent`, and `CancelRecurringEvent`, which are not implemented.
 - Systems referenced in specs but still missing: `CriminalRecordSystem`, `CameraEffects`, `MinigameSystem`, `VehicleSystem`, `ClothingSystem`, `PhoneSystem`.
 - `EconomySystem` enums are missing spec values: `IncomeSource.SexWork`, `IncomeSource.SugarRelationship`, `ExpenseType.Blackmail`, `ExpenseType.Personal`.
