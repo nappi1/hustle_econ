@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -20,16 +21,16 @@ namespace HustleEconomy.Editor
 #if ENABLE_INPUT_SYSTEM
             EnsureFolders();
 
-            InputActionAsset primary = LoadOrCreateAsset(PrimaryAssetPath);
-            ConfigureAsset(primary);
-            SaveAsset(primary);
+            InputActionAsset working = LoadExistingOrCreate(PrimaryAssetPath);
+            ConfigureAsset(working);
 
-            InputActionAsset resourcesCopy = LoadOrCreateAsset(ResourcesAssetPath);
-            ConfigureAsset(resourcesCopy);
-            SaveAsset(resourcesCopy);
+            WriteJsonAsset(PrimaryAssetPath, working);
+            WriteJsonAsset(ResourcesAssetPath, working);
 
-            AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+
+            ValidateImportedAsset(PrimaryAssetPath);
+            ValidateImportedAsset(ResourcesAssetPath);
 
             Debug.Log(
                 "InputActions generated/updated:\n" +
@@ -56,21 +57,11 @@ namespace HustleEconomy.Editor
                 return;
             }
 
-            if (File.Exists(ResourcesAssetPath))
-            {
-                AssetDatabase.DeleteAsset(ResourcesAssetPath);
-            }
-
-            bool copied = AssetDatabase.CopyAsset(PrimaryAssetPath, ResourcesAssetPath);
-            if (!copied)
-            {
-                Debug.LogError(
-                    $"Ensure Resources InputActions: failed to copy '{PrimaryAssetPath}' to '{ResourcesAssetPath}'.");
-                return;
-            }
-
-            AssetDatabase.SaveAssets();
+            CopyFileOverwrite(PrimaryAssetPath, ResourcesAssetPath);
+            AssetDatabase.ImportAsset(ResourcesAssetPath, ImportAssetOptions.ForceUpdate);
             AssetDatabase.Refresh();
+
+            ValidateImportedAsset(ResourcesAssetPath);
             Debug.Log($"Ensured Resources InputActions: {ResourcesAssetPath}");
 #else
             Debug.LogWarning(
@@ -82,37 +73,65 @@ namespace HustleEconomy.Editor
 #if ENABLE_INPUT_SYSTEM
         private static void EnsureFolders()
         {
-            if (!AssetDatabase.IsValidFolder("Assets/Settings"))
-            {
-                AssetDatabase.CreateFolder("Assets", "Settings");
-            }
-
-            if (!AssetDatabase.IsValidFolder("Assets/Settings/Input"))
-            {
-                AssetDatabase.CreateFolder("Assets/Settings", "Input");
-            }
-
-            if (!AssetDatabase.IsValidFolder("Assets/Resources"))
-            {
-                AssetDatabase.CreateFolder("Assets", "Resources");
-            }
+            EnsureFolder("Assets/Settings");
+            EnsureFolder("Assets/Settings/Input");
+            EnsureFolder("Assets/Resources");
         }
 
-        private static InputActionAsset LoadOrCreateAsset(string path)
+        private static void EnsureFolder(string path)
         {
-            InputActionAsset asset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(path);
-            if (asset != null)
+            if (AssetDatabase.IsValidFolder(path))
             {
-                if (asset.name != "InputActions")
+                return;
+            }
+
+            int slash = path.LastIndexOf('/');
+            if (slash <= 0)
+            {
+                return;
+            }
+
+            string parent = path.Substring(0, slash);
+            string name = path.Substring(slash + 1);
+            if (!AssetDatabase.IsValidFolder(parent))
+            {
+                EnsureFolder(parent);
+            }
+
+            AssetDatabase.CreateFolder(parent, name);
+        }
+
+        private static InputActionAsset LoadExistingOrCreate(string path)
+        {
+            InputActionAsset fromImporter = AssetDatabase.LoadAssetAtPath<InputActionAsset>(path);
+            if (fromImporter != null)
+            {
+                return fromImporter;
+            }
+
+            if (File.Exists(path))
+            {
+                try
                 {
-                    asset.name = "InputActions";
+                    string json = File.ReadAllText(path);
+                    if (!string.IsNullOrWhiteSpace(json))
+                    {
+                        InputActionAsset fromJson = InputActionAsset.FromJson(json);
+                        if (fromJson != null)
+                        {
+                            fromJson.name = "InputActions";
+                            return fromJson;
+                        }
+                    }
                 }
-                return asset;
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"InputActionsGenerator: existing file at '{path}' is invalid JSON and will be replaced. {ex.Message}");
+                }
             }
 
             InputActionAsset created = ScriptableObject.CreateInstance<InputActionAsset>();
             created.name = "InputActions";
-            AssetDatabase.CreateAsset(created, path);
             return created;
         }
 
@@ -125,8 +144,6 @@ namespace HustleEconomy.Editor
 
             InputActionMap uiMap = EnsureMap(asset, "UI");
             ConfigureUiMap(uiMap);
-
-            EditorUtility.SetDirty(asset);
         }
 
         private static void ConfigurePlayerMap(InputActionMap map)
@@ -217,15 +234,7 @@ namespace HustleEconomy.Editor
             if (action == null)
             {
                 action = map.AddAction(actionName, type);
-                if (!string.IsNullOrEmpty(expectedControlType))
-                {
-                    action.expectedControlType = expectedControlType;
-                }
-                return action;
             }
-
-            // Non-destructive update: keep existing type to avoid mutating authored assets
-            // across Input System versions where action.type may be read-only.
 
             if (action.expectedControlType != expectedControlType)
             {
@@ -237,7 +246,7 @@ namespace HustleEconomy.Editor
 
         private static void EnsureBinding(InputAction action, string path)
         {
-            if (HasBinding(action, path, null, false, false))
+            if (HasBinding(action, path, false, false))
             {
                 return;
             }
@@ -305,40 +314,52 @@ namespace HustleEconomy.Editor
         private static bool HasBinding(
             InputAction action,
             string path,
-            string name,
             bool isComposite,
             bool isPartOfComposite)
         {
             foreach (InputBinding binding in action.bindings)
             {
-                if (binding.path != path)
+                if (binding.path == path &&
+                    binding.isComposite == isComposite &&
+                    binding.isPartOfComposite == isPartOfComposite)
                 {
-                    continue;
+                    return true;
                 }
-
-                if (binding.isComposite != isComposite || binding.isPartOfComposite != isPartOfComposite)
-                {
-                    continue;
-                }
-
-                if (!string.IsNullOrEmpty(name) && binding.name != name)
-                {
-                    continue;
-                }
-
-                return true;
             }
 
             return false;
         }
 
-        private static void SaveAsset(InputActionAsset asset)
+        private static void WriteJsonAsset(string path, InputActionAsset asset)
         {
-            EditorUtility.SetDirty(asset);
-            string path = AssetDatabase.GetAssetPath(asset);
-            if (!string.IsNullOrEmpty(path) && File.Exists(path))
+            string directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
-                AssetDatabase.ImportAsset(path);
+                Directory.CreateDirectory(directory);
+            }
+
+            string json = asset.ToJson();
+            File.WriteAllText(path, json);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        }
+
+        private static void CopyFileOverwrite(string source, string destination)
+        {
+            string destinationDir = Path.GetDirectoryName(destination);
+            if (!string.IsNullOrEmpty(destinationDir) && !Directory.Exists(destinationDir))
+            {
+                Directory.CreateDirectory(destinationDir);
+            }
+
+            File.Copy(source, destination, true);
+        }
+
+        private static void ValidateImportedAsset(string path)
+        {
+            InputActionAsset imported = AssetDatabase.LoadAssetAtPath<InputActionAsset>(path);
+            if (imported == null)
+            {
+                Debug.LogError($"InputActionsGenerator: failed to import valid InputActionAsset at '{path}'.");
             }
         }
 #endif

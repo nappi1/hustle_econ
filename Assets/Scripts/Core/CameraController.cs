@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Core
 {
@@ -85,9 +86,19 @@ namespace Core
                 return;
             }
             instance = this;
-            DontDestroyOnLoad(gameObject);
+            GameObject root = transform.root != null ? transform.root.gameObject : gameObject;
+            DontDestroyOnLoad(root);
+            SceneManager.sceneLoaded += HandleSceneLoaded;
 
             Initialize();
+        }
+
+        private void OnDestroy()
+        {
+            if (instance == this)
+            {
+                SceneManager.sceneLoaded -= HandleSceneLoaded;
+            }
         }
 
         public void Initialize()
@@ -113,6 +124,7 @@ namespace Core
             currentFOV = settings.thirdPersonFOV;
 
             ApplyCameraSettings(CameraMode.ThirdPerson, true);
+            EnsureSingleAudioListener();
         }
 
         public void SetTarget(Transform target)
@@ -391,6 +403,53 @@ namespace Core
             if (mainCamera != null)
             {
                 mainCamera.fieldOfView = currentFOV;
+            }
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (mainCamera == null)
+            {
+                mainCamera = Camera.main;
+            }
+
+            EnsureSingleAudioListener();
+        }
+
+        private void EnsureSingleAudioListener()
+        {
+            AudioListener[] listeners = FindObjectsByType<AudioListener>(FindObjectsSortMode.None);
+            if (listeners == null || listeners.Length <= 1)
+            {
+                return;
+            }
+
+            AudioListener keep = null;
+            if (mainCamera != null)
+            {
+                keep = mainCamera.GetComponent<AudioListener>();
+            }
+
+            if (keep == null)
+            {
+                foreach (AudioListener listener in listeners)
+                {
+                    if (listener.enabled)
+                    {
+                        keep = listener;
+                        break;
+                    }
+                }
+            }
+
+            foreach (AudioListener listener in listeners)
+            {
+                if (listener == null)
+                {
+                    continue;
+                }
+
+                listener.enabled = listener == keep;
             }
         }
 

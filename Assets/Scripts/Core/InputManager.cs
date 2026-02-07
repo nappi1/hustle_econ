@@ -827,10 +827,10 @@ namespace Core
         {
             return playerActionMap != null ? playerActionMap.name : "none";
         }
-
+ 
         private static string GetAvailableMapNames(InputActionAsset asset)
         {
-            if (asset == null || asset.actionMaps == null || asset.actionMaps.Count == 0)
+            if (asset == null || asset.actionMaps.Count == 0)
             {
                 return "(none)";
             }
@@ -846,7 +846,7 @@ namespace Core
 
         private static string GetAvailableActionNames(InputActionMap map)
         {
-            if (map == null || map.actions == null || map.actions.Count == 0)
+            if (map == null || map.actions.Count == 0)
             {
                 return "(none)";
             }
