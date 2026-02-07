@@ -151,3 +151,21 @@ This document tracks known mismatches between specs and the current implementati
 - Added explicit test helpers for deterministic outcomes (decay loops, DUI outcomes, patrol multipliers) because Update-driven logic and external integrations are not present.
 
 If you want any of these gaps resolved, the best next step is to add the missing system APIs or align the enums and namespaces project-wide.
+
+**Remaining Steps From COMPLETE_IMPLEMENTATION_GUIDE.md**
+- Integration API additions:
+  - `EconomySystem` missing `IncomeSource.SexWork`, `IncomeSource.SugarRelationship`, `ExpenseType.Blackmail`, `ExpenseType.Personal`.
+  - `JobSystem` missing `FireAllJobs`, `TriggerWarning(playerId, ...)`, `CheckTerminationForSexWork`, and `GetCurrentJob`.
+  - `RelationshipSystem` missing `GetNPCs`, `GetNPC`, NPC `bodyPreferences`, and `PlayerAction.isPositive`.
+  - `TimeEnergySystem` missing `GetDeltaGameHours`, `ScheduleRecurringEvent`, `CancelRecurringEvent`.
+  - `DetectionSystem` missing `SetPatrolFrequency`, `SetDetectionSensitivity`.
+- Integration wiring (per guide):
+  - ActivitySystem ↔ MinigameSystem (start/pause/resume/end and performance sync).
+  - ActivitySystem ↔ CameraController (auto-switch for first-person activities).
+  - ActivitySystem ↔ DetectionSystem (work detection and warning flow).
+  - LocationSystem ↔ GameManager (scene load instead of Debug.Log).
+- UI/Scene setup (manual project steps):
+  - Create Core systems scene and UI canvas/prefabs.
+  - Build minimal test scenes (Apartment/Office) with interactables.
+  - Hook PlayerController/CameraController targets in scenes.
+- Integration tests and playtest loop after wiring is complete.
