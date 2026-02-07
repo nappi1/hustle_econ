@@ -12,7 +12,7 @@ namespace Core
             DropItem,
             StartJob,
             EndJob,
-            TalkToNPC,
+            TalkToNpc,
             OpenDoor,
             SitDown,
             StandUp,
@@ -52,21 +52,21 @@ namespace Core
             public float lastInteractionTime;
         }
 
-        private static InteractionSystem instance;
+        private static InteractionSystem _instance;
         public static InteractionSystem Instance
         {
             get
             {
-                if (instance == null)
+                if (_instance == null)
                 {
-                    instance = FindAnyObjectByType<InteractionSystem>();
-                    if (instance == null)
+                    _instance = FindAnyObjectByType<InteractionSystem>();
+                    if (_instance == null)
                     {
                         GameObject go = new GameObject("InteractionSystem");
-                        instance = go.AddComponent<InteractionSystem>();
+                        _instance = go.AddComponent<InteractionSystem>();
                     }
                 }
-                return instance;
+                return _instance;
             }
         }
 
@@ -82,23 +82,23 @@ namespace Core
         [SerializeField] private float interactionCooldown = 0.5f;
         [SerializeField] private LayerMask interactableLayer;
 
-        private InteractionSystemState state;
+        private InteractionSystemState _state;
 
         private void Awake()
         {
-            if (instance != null && instance != this)
+            if (_instance != null && _instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
-            instance = this;
+            _instance = this;
             DontDestroyOnLoad(gameObject);
             Initialize();
         }
 
         public void Initialize()
         {
-            state = new InteractionSystemState
+            _state = new InteractionSystemState
             {
                 currentTarget = null,
                 lastInteraction = null,
@@ -155,12 +155,12 @@ namespace Core
 
         public void UpdateCurrentTarget()
         {
-            InteractionData previousTarget = state.currentTarget;
+            InteractionData previousTarget = _state.currentTarget;
             InteractionData newTarget = DetectInteractable();
 
             if (newTarget != null)
             {
-                state.currentTarget = newTarget;
+                _state.currentTarget = newTarget;
                 if (previousTarget == null ||
                     previousTarget.interactableObject != newTarget.interactableObject)
                 {
@@ -176,36 +176,36 @@ namespace Core
                 OnCurrentTargetChanged?.Invoke(null);
             }
 
-            state.currentTarget = null;
+            _state.currentTarget = null;
         }
 
         public InteractionResult TryInteract()
         {
-            if (state.currentTarget == null)
+            if (_state.currentTarget == null)
             {
                 return InteractionResult.Unavailable;
             }
 
-            if (Time.time - state.lastInteractionTime < interactionCooldown)
+            if (Time.time - _state.lastInteractionTime < interactionCooldown)
             {
                 return InteractionResult.Cancelled;
             }
 
-            if (!state.currentTarget.isAvailable)
+            if (!_state.currentTarget.isAvailable)
             {
-                OnInteractionFailed?.Invoke(state.currentTarget, state.currentTarget.unavailableReason);
+                OnInteractionFailed?.Invoke(_state.currentTarget, _state.currentTarget.unavailableReason);
                 return InteractionResult.Failed;
             }
 
-            InteractionResult result = Interact(state.currentTarget);
-            state.lastInteractionTime = Time.time;
-            state.lastInteraction = state.currentTarget;
+            InteractionResult result = Interact(_state.currentTarget);
+            _state.lastInteractionTime = Time.time;
+            _state.lastInteraction = _state.currentTarget;
             return result;
         }
 
         public InteractionResult Interact(InteractionData data)
         {
-            state.isInteracting = true;
+            _state.isInteracting = true;
             OnInteractionStarted?.Invoke(data);
 
             InteractionResult result = InteractionResult.Failed;
@@ -226,8 +226,8 @@ namespace Core
                     case InteractionType.EndJob:
                         result = HandleEndJob(data.targetId);
                         break;
-                    case InteractionType.TalkToNPC:
-                        result = HandleTalkToNPC(data.targetId);
+                    case InteractionType.TalkToNpc:
+                        result = HandleTalkToNpc(data.targetId);
                         break;
                     case InteractionType.OpenDoor:
                         result = HandleOpenDoor(data.targetId);
@@ -259,7 +259,7 @@ namespace Core
                 result = InteractionResult.Failed;
             }
 
-            state.isInteracting = false;
+            _state.isInteracting = false;
             OnInteractionCompleted?.Invoke(data, result);
             return result;
         }
@@ -362,27 +362,27 @@ namespace Core
 
         public InteractionData GetCurrentTarget()
         {
-            return state.currentTarget;
+            return _state.currentTarget;
         }
 
         public bool IsLookingAtInteractable()
         {
-            return state.currentTarget != null;
+            return _state.currentTarget != null;
         }
 
         public bool IsInteracting()
         {
-            return state.isInteracting;
+            return _state.isInteracting;
         }
 
         public void SetCurrentTargetForTesting(InteractionData data)
         {
-            state.currentTarget = data;
+            _state.currentTarget = data;
         }
 
         public InteractionSystemState GetStateForTesting()
         {
-            return state;
+            return _state;
         }
 
         private InteractionResult HandlePickupItem(string itemId)
@@ -429,7 +429,7 @@ namespace Core
             return InteractionResult.Success;
         }
 
-        private InteractionResult HandleTalkToNPC(string npcId)
+        private InteractionResult HandleTalkToNpc(string npcId)
         {
             Debug.Log($"Talking to NPC: {npcId}");
             return InteractionResult.Success;

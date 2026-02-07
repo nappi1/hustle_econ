@@ -9,13 +9,13 @@ namespace Tests.Core
 {
     public class InteractionSystemTests
     {
-        private GameObject interactionObject;
-        private GameObject inventoryObject;
-        private GameObject entityObject;
-        private GameObject playerObject;
-        private GameObject phoneObject;
-        private GameObject hudObject;
-        private InteractionSystem system;
+        private GameObject _interactionObject;
+        private GameObject _inventoryObject;
+        private GameObject _entityObject;
+        private GameObject _playerObject;
+        private GameObject _phoneObject;
+        private GameObject _hudObject;
+        private InteractionSystem _system;
 
         [SetUp]
         public void SetUp()
@@ -30,50 +30,50 @@ namespace Tests.Core
             ResetSingleton(typeof(LocationSystem));
             ResetSingleton(typeof(InputManager));
 
-            entityObject = new GameObject("EntitySystem");
-            entityObject.AddComponent<EntitySystem>();
+            _entityObject = new GameObject("EntitySystem");
+            _entityObject.AddComponent<EntitySystem>();
 
-            inventoryObject = new GameObject("InventorySystem");
-            inventoryObject.AddComponent<InventorySystem>();
+            _inventoryObject = new GameObject("InventorySystem");
+            _inventoryObject.AddComponent<InventorySystem>();
 
-            playerObject = new GameObject("PlayerController");
-            playerObject.AddComponent<CharacterController>();
-            playerObject.AddComponent<PlayerController>();
+            _playerObject = new GameObject("PlayerController");
+            _playerObject.AddComponent<CharacterController>();
+            _playerObject.AddComponent<PlayerController>();
 
-            phoneObject = new GameObject("PhoneUI");
-            phoneObject.AddComponent<PhoneUI>();
+            _phoneObject = new GameObject("PhoneUI");
+            _phoneObject.AddComponent<PhoneUI>();
 
-            hudObject = new GameObject("HUDController");
-            hudObject.AddComponent<HUDController>();
+            _hudObject = new GameObject("HUDController");
+            _hudObject.AddComponent<HUDController>();
 
-            interactionObject = new GameObject("InteractionSystem");
-            system = interactionObject.AddComponent<InteractionSystem>();
+            _interactionObject = new GameObject("InteractionSystem");
+            _system = _interactionObject.AddComponent<InteractionSystem>();
         }
 
         [TearDown]
         public void TearDown()
         {
-            if (interactionObject != null) UnityEngine.Object.DestroyImmediate(interactionObject);
-            if (inventoryObject != null) UnityEngine.Object.DestroyImmediate(inventoryObject);
-            if (entityObject != null) UnityEngine.Object.DestroyImmediate(entityObject);
-            if (playerObject != null) UnityEngine.Object.DestroyImmediate(playerObject);
-            if (phoneObject != null) UnityEngine.Object.DestroyImmediate(phoneObject);
-            if (hudObject != null) UnityEngine.Object.DestroyImmediate(hudObject);
+            if (_interactionObject != null) UnityEngine.Object.DestroyImmediate(_interactionObject);
+            if (_inventoryObject != null) UnityEngine.Object.DestroyImmediate(_inventoryObject);
+            if (_entityObject != null) UnityEngine.Object.DestroyImmediate(_entityObject);
+            if (_playerObject != null) UnityEngine.Object.DestroyImmediate(_playerObject);
+            if (_phoneObject != null) UnityEngine.Object.DestroyImmediate(_phoneObject);
+            if (_hudObject != null) UnityEngine.Object.DestroyImmediate(_hudObject);
         }
 
         [Test]
         public void SetCurrentTargetForTesting_SetsTarget()
         {
             var data = new InteractionSystem.InteractionData { type = InteractionSystem.InteractionType.Examine };
-            system.SetCurrentTargetForTesting(data);
-            Assert.AreEqual(data, system.GetCurrentTarget(), "Target should be set");
+            _system.SetCurrentTargetForTesting(data);
+            Assert.AreEqual(data, _system.GetCurrentTarget(), "Target should be set");
         }
 
         [Test]
         public void TryInteract_NoTarget_ReturnsUnavailable()
         {
-            system.SetCurrentTargetForTesting(null);
-            var result = system.TryInteract();
+            _system.SetCurrentTargetForTesting(null);
+            var result = _system.TryInteract();
             Assert.AreEqual(InteractionSystem.InteractionResult.Unavailable, result, "No target should be unavailable");
         }
 
@@ -81,9 +81,9 @@ namespace Tests.Core
         public void TryInteract_TooSoon_ReturnsCancelled()
         {
             var data = new InteractionSystem.InteractionData { type = InteractionSystem.InteractionType.Examine, isAvailable = true };
-            system.SetCurrentTargetForTesting(data);
-            system.TryInteract();
-            var result = system.TryInteract();
+            _system.SetCurrentTargetForTesting(data);
+            _system.TryInteract();
+            var result = _system.TryInteract();
             Assert.AreEqual(InteractionSystem.InteractionResult.Cancelled, result, "Cooldown should cancel");
         }
 
@@ -97,15 +97,15 @@ namespace Tests.Core
                 isAvailable = false,
                 unavailableReason = "Blocked"
             };
-            system.SetCurrentTargetForTesting(data);
-            system.OnInteractionFailed += (_, reason) =>
+            _system.SetCurrentTargetForTesting(data);
+            _system.OnInteractionFailed += (_, reason) =>
             {
                 if (reason == "Blocked")
                 {
                     fired = true;
                 }
             };
-            var result = system.TryInteract();
+            var result = _system.TryInteract();
             Assert.AreEqual(InteractionSystem.InteractionResult.Failed, result, "Should fail");
             Assert.IsTrue(fired, "Failure event should fire");
         }
@@ -114,7 +114,7 @@ namespace Tests.Core
         public void Interact_UsePhone_TogglesPhone()
         {
             var data = new InteractionSystem.InteractionData { type = InteractionSystem.InteractionType.UsePhone, isAvailable = true };
-            system.Interact(data);
+            _system.Interact(data);
             Assert.IsTrue(PhoneUI.Instance.IsPhoneOpen(), "Phone should open");
         }
 
@@ -122,11 +122,11 @@ namespace Tests.Core
         public void Interact_SitStand_UpdatesPosture()
         {
             var sitData = new InteractionSystem.InteractionData { type = InteractionSystem.InteractionType.SitDown, isAvailable = true };
-            system.Interact(sitData);
+            _system.Interact(sitData);
             Assert.AreEqual(PlayerController.PlayerPosture.Sitting, PlayerController.Instance.GetPosture(), "Should sit");
 
             var standData = new InteractionSystem.InteractionData { type = InteractionSystem.InteractionType.StandUp, isAvailable = true };
-            system.Interact(standData);
+            _system.Interact(standData);
             Assert.AreEqual(PlayerController.PlayerPosture.Standing, PlayerController.Instance.GetPosture(), "Should stand");
         }
 
@@ -145,7 +145,7 @@ namespace Tests.Core
                     customProperties = null
                 });
             var data = new InteractionSystem.InteractionData { type = InteractionSystem.InteractionType.Examine, targetId = entity.id, isAvailable = true };
-            var result = system.Interact(data);
+            var result = _system.Interact(data);
             Assert.AreEqual(InteractionSystem.InteractionResult.Success, result, "Examine should succeed");
         }
 
@@ -158,7 +158,7 @@ namespace Tests.Core
                 distance = 100f,
                 interactableComponent = null
             };
-            bool can = system.CanInteract(data, out string reason);
+            bool can = _system.CanInteract(data, out string reason);
             Assert.IsFalse(can, "Too far should fail");
             Assert.AreEqual("Too far away", reason, "Reason should indicate distance");
         }
@@ -176,7 +176,7 @@ namespace Tests.Core
                 interactableComponent = interactable,
                 interactableObject = interactable.gameObject
             };
-            bool can = system.CanInteract(data, out string reason);
+            bool can = _system.CanInteract(data, out string reason);
             Assert.IsFalse(can, "Missing required item should fail");
             Assert.AreEqual("Missing required item", reason, "Reason should indicate missing item");
             UnityEngine.Object.DestroyImmediate(interactable.gameObject);

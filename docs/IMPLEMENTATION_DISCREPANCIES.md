@@ -4,7 +4,7 @@ This document tracks known mismatches between specs and the current implementati
 
 **Global / Cross-System**
 - `TimeEnergySystem` is used instead of `TimeSystem`. Specs reference `TimeSystem.GetDeltaGameHours`, `ScheduleRecurringEvent`, and `CancelRecurringEvent`, which are not implemented.
-- Systems referenced in specs but still missing: `CriminalRecordSystem`, `CameraEffects`, `VehicleSystem`, `ClothingSystem`, `PhoneUI`, `MinigameUI`, `HUDController`, `GameManager`, `InteractionSystem`.
+- Systems referenced in specs but still missing: `CriminalRecordSystem`, `CameraEffects`, `VehicleSystem`, `ClothingSystem`.
 - `EconomySystem` enums are missing spec values: `IncomeSource.SexWork`, `IncomeSource.SugarRelationship`, `ExpenseType.Blackmail`, `ExpenseType.Personal`.
 - `JobSystem` missing APIs referenced in specs: `FireAllJobs(playerId, reason)`, `TriggerWarning(playerId, ...)`, `CheckTerminationForSexWork(playerId)`.
 - `RelationshipSystem` missing APIs referenced in specs: `GetNPCsByType`, `GetNPC`, NPC `bodyPreferences`, and `PlayerAction.isPositive`.
@@ -139,6 +139,14 @@ This document tracks known mismatches between specs and the current implementati
 - Save/Load only writes minimal `GameSaveData` (version, date, playtime, currentScene). No system `SaveData` integration (APIs missing).
 - Scene loading is no-op in EditMode and does not notify LocationSystem (`OnSceneLoaded` API missing).
 - Pause/Resume uses `InputManager` context UI and `Time.timeScale`; no pause menu integration.
+
+**InteractionSystem (`Assets/Scripts/Core/InteractionSystem.cs`)**
+- Uses `Core` namespace; spec expects `HustleEconomy.Core`.
+- Uses `InventorySystem.AddItem/RemoveItem` (no `PickupItem/DropItem` API exists).
+- Job and travel validation are stubbed because `JobSystem.GetJob/GetCurrentJob` and `LocationSystem.CanTravelTo` do not exist.
+- `HandleExamine` uses `Entity.id` and generic message (Entity has no `name`/`description` fields).
+- `LocationSystem.TravelToLocation` is used (spec references `TravelTo`).
+- Prompt integration with `HUDController` is not implemented (no HUD prompt APIs).
 **Skill/Heat/Intoxication/Location Test Adjustments**
 - Added explicit test helpers for deterministic outcomes (decay loops, DUI outcomes, patrol multipliers) because Update-driven logic and external integrations are not present.
 
