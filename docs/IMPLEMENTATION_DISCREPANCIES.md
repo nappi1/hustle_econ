@@ -132,6 +132,13 @@ This document tracks known mismatches between specs and the current implementati
 - EconomySystem has no `OnBalanceChanged`, so HUD relies on manual `UpdateMoneyDisplay` calls or test helper.
 - Activity display uses `GetActiveActivities("player")` instead of spec’s `GetActiveActivity`.
 - PhoneUI events are wired when available; no HUD prompt system implemented.
+
+**GameManager (`Assets/Scripts/Core/GameManager.cs`)**
+- Uses `Core` namespace; spec expects `HustleEconomy.Core`.
+- Initializes systems via `Instance.ToString()` (no explicit `Initialize()` in most systems); no strict ordering enforcement beyond access.
+- Save/Load only writes minimal `GameSaveData` (version, date, playtime, currentScene). No system `SaveData` integration (APIs missing).
+- Scene loading is no-op in EditMode and does not notify LocationSystem (`OnSceneLoaded` API missing).
+- Pause/Resume uses `InputManager` context UI and `Time.timeScale`; no pause menu integration.
 **Skill/Heat/Intoxication/Location Test Adjustments**
 - Added explicit test helpers for deterministic outcomes (decay loops, DUI outcomes, patrol multipliers) because Update-driven logic and external integrations are not present.
 
