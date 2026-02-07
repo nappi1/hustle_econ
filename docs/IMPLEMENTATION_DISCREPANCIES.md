@@ -9,7 +9,7 @@ This document tracks known mismatches between specs and the current implementati
 - `JobSystem` now includes `FireAllJobs`, `TriggerWarning(playerId, ...)`, `CheckTerminationForSexWork`, and `GetCurrentJob`.
 - `RelationshipSystem` now includes `GetNPCs`, `GetNPC`, NPC `bodyPreferences`, and `PlayerAction.isPositive`.
 - Input handling: project uses the new Input System. `InputManager` and `ClickTargetsMinigame` now gate legacy input access behind `ENABLE_LEGACY_INPUT_MANAGER`, but no native Input System bindings exist yet.
-- Scene loading: `LocationSystem` now calls `GameManager.LoadScene`, but tests/builds will fail unless scenes are added to Build Settings.
+- Scene loading: `LocationSystem` now calls `GameManager.LoadScene`; Build Settings currently include `CoreSystems`, `SampleScene`, and `Office`.
 
 **InputManager (`Assets/Scripts/Core/InputManager.cs`)**
 - Uses `Core` namespace; spec expects `HustleEconomy.Core`.
@@ -166,8 +166,8 @@ If you want any of these gaps resolved, the best next step is to align systems w
   - ActivitySystem -> DetectionSystem (work detection and warning flow).
   - LocationSystem -> GameManager (scene load).
 - UI/Scene setup (manual project steps):
-  - Create Core systems scene and UI canvas/prefabs.
-  - Build minimal test scenes (Apartment/Office) with interactables.
-  - Hook PlayerController/CameraController targets in scenes.
+  - Verify and polish existing `CoreSystems` and `Office` scene wiring (references, prompts, detection flow).
+  - Add/iterate additional scenes (for example Apartment) as needed for travel loops.
+  - Hook and validate PlayerController/CameraController targets in each playable scene.
 - Integration tests and playtest loop after wiring is complete.
 

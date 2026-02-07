@@ -26,7 +26,7 @@ You now have **complete specifications** for all components needed to build a pl
 16. ActivitySystem
 17. MinigameSystem
 
-### **New Components (8 - Specs Complete, Implementation Needed)**
+### **New Components (8 - Implemented)**
 18. **PlayerController** - 3D character movement, posture, physics
 19. **CameraController** - Third/first-person switching, auto-modes
 20. **InputManager** - Unified input handling (keyboard/mouse)
@@ -394,17 +394,14 @@ Player
 
 ## ⏭️ NEXT STEPS
 
-**You are here:** ✅ All specifications complete
+**You are here:** ✅ Core systems/components/scenes are in place
 
-**Option A: Start Implementation (Recommended)**
-1. Open Unity project
-2. Create CoreSystems GameObject with all system components
-3. Implement components in order (InputManager → PlayerController → ...)
-4. Test each component with 30 unit tests before moving to next
-5. After all 8 components implemented, begin integration wiring
-6. Run integration tests
-7. Build office test scene
-8. Playtest core loop
+**Option A: Runtime Hardening & Validation (Recommended)**
+1. Run the three integration scenarios from this guide.
+2. Expand save/load from minimal GameManager snapshot to per-system state serialization.
+3. Migrate InputManager/minigame input paths to native Unity Input System bindings.
+4. Resolve high-impact TODO integrations (EventSystem minigame creation, InteractionSystem shift/location checks, ActivitySystem pay/skill mapping).
+5. Re-run integration tests and update discrepancy docs.
 
 **Estimated Timeline:**
 - Implementation: 40-60 hours (with AI assistance)
@@ -427,7 +424,7 @@ Player
 
 **You now have:**
 - ✅ 17 system specifications (implemented with unit tests)
-- ✅ 8 component specifications (ready for implementation)
+- ✅ 8 components implemented with tests
 - ✅ Master Implementation Guide (coding standards, patterns)
 - ✅ Implementation Discrepancies (known gaps documented)
 - ✅ Integration requirements (missing APIs, wiring tasks)
@@ -441,3 +438,4 @@ Ready to code? Let me know which component you want to implement first, or if yo
 ---
 
 **END OF IMPLEMENTATION GUIDE**
+

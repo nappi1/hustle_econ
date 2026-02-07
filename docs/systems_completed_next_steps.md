@@ -24,27 +24,30 @@ All systems and UI components listed in the implementation guide exist as script
 
 ### Scene/Playtest Status
 - Scene loading is functional but requires scenes to be in Build Settings.
-- Only SampleScene exists in Assets/Scenes; no Office/Apartment test scenes yet.
+- Assets/Scenes now contains `CoreSystems.unity`, `Office.unity`, and `SampleScene.unity`.
+- Build Settings currently include `CoreSystems`, `SampleScene`, and `Office`.
+- `CoreSystems` has all core systems plus InputManager/GameManager/InteractionSystem and UI roots (HUD/Phone/Minigame UI scripts attached).
+- `Office` includes player prefab instance, janitorial closet interaction (`job1`), exit door interaction (`apartment_player`), computer interaction, and 5 dirty spots.
 
 ## Remaining Next Steps (From COMPLETE_IMPLEMENTATION_GUIDE.md)
 
-### 1) Build the CoreSystems + UI Scene
-- Create a persistent scene with all systems on a DontDestroyOnLoad root.
-- Build UI canvas containing HUDController, PhoneUI, MinigameUI.
-
-### 2) Build Minimal Office Test Scene
-- Environment: floor, walls, desk, janitorial closet, door, dirty spots.
-- NPC: boss patrol + detection observer.
-- Player: PlayerController + CameraController wired to target.
-
-### 3) Run Integration Scenarios
+### 1) Run Integration Scenarios
 - Core multitasking loop.
 - Save/Load flow.
 - Detection & consequences cascade.
 
-### 4) Save/Load Expansion
+### 2) Save/Load Expansion
 - Currently only GameManager minimal save data exists.
 - System-level SaveData APIs are still missing. These should be implemented before full save/load validation.
+
+### 3) Native Input System Migration
+- InputManager and ClickTargetsMinigame still rely on legacy input calls gated by `ENABLE_LEGACY_INPUT_MANAGER`.
+- Add native Input System bindings and route gameplay/minigame input through them.
+
+### 4) Remaining Spec-Compliance Gaps
+- EventSystem event-minigame creation and richer scheduling.
+- InteractionSystem shift-schedule/location validation.
+- ActivitySystem skill mapping and work-pay derivation hardening.
 
 ## Known Discrepancies (Code vs Spec)
 
@@ -77,14 +80,13 @@ All systems and UI components listed in the implementation guide exist as script
 `docs/IMPLEMENTATION_DISCREPANCIES.md` is accurate for the current codebase and highlights remaining gaps:
 - Missing external systems (CriminalRecordSystem, VehicleSystem, ClothingSystem, PhoneSystem).
 - Areas where enums exist but some systems still use generic values.
-- Incomplete UI and scene scaffolding.
+- Remaining integration/TODO items in runtime systems.
 
 ## Recommended Next Work (Pragmatic Order)
-1) Build the CoreSystems + UI persistent scene.
-2) Build Office test scene and wire interactions.
-3) Run integration scenarios from the guide.
-4) Expand Save/Load with per-system data.
-5) Migrate to native Input System bindings (avoid legacy input dependency).
+1) Run integration scenarios from the guide against current `CoreSystems` + `Office`.
+2) Expand Save/Load with per-system data.
+3) Migrate to native Input System bindings (avoid legacy input dependency).
+4) Resolve highest-impact runtime TODOs (EventSystem minigames, InteractionSystem job validation, Activity pay/skill mapping).
 
 ---
 
