@@ -4,7 +4,7 @@ This document tracks known mismatches between specs and the current implementati
 
 **Global / Cross-System**
 - `TimeEnergySystem` is used instead of `TimeSystem`. Specs reference `TimeSystem.GetDeltaGameHours`, `ScheduleRecurringEvent`, and `CancelRecurringEvent`, which are not implemented.
-- Systems referenced in specs but still missing: `CriminalRecordSystem`, `CameraEffects`, `MinigameSystem`, `VehicleSystem`, `ClothingSystem`, `PhoneSystem`.
+- Systems referenced in specs but still missing: `CriminalRecordSystem`, `CameraEffects`, `VehicleSystem`, `ClothingSystem`, `PhoneSystem`.
 - `EconomySystem` enums are missing spec values: `IncomeSource.SexWork`, `IncomeSource.SugarRelationship`, `ExpenseType.Blackmail`, `ExpenseType.Personal`.
 - `JobSystem` missing APIs referenced in specs: `FireAllJobs(playerId, reason)`, `TriggerWarning(playerId, ...)`, `CheckTerminationForSexWork(playerId)`.
 - `RelationshipSystem` missing APIs referenced in specs: `GetNPCsByType`, `GetNPC`, NPC `bodyPreferences`, and `PlayerAction.isPositive`.
